@@ -544,6 +544,16 @@ def record_session(trial_dir: str | os.PathLike[str], mode: str, claude_session_
     save_state(trial, state)
 
 
+def attach_session_id(trial_dir: str | os.PathLike[str], claude_session_id: str) -> None:
+    """Record the Claude session id discovered after the chat exits on the latest session."""
+    trial = Path(trial_dir)
+    state = load_state(trial)
+    if state["sessions"]:
+        state["sessions"][-1]["claude_session_id"] = claude_session_id
+    state["last_claude_session_id"] = claude_session_id
+    save_state(trial, state)
+
+
 # ---------------------------------------------------------------------------
 # Write guard
 # ---------------------------------------------------------------------------

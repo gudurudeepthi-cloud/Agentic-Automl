@@ -165,18 +165,20 @@ def producer_skill_for_artifact(key: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _source_root() -> Path | None:
+def source_root() -> Path | None:
+    """The repo root when running from a source checkout, else None (installed wheel)."""
     root = PACKAGE_DIR.parents[1]
     if (root / "pyproject.toml").is_file() and (root / "schemas").is_dir():
         return root
     return None
 
 
+
 def schemas_dir() -> Path:
     bundled = PACKAGE_DIR / "_data" / "schemas"
     if bundled.is_dir():
         return bundled
-    root = _source_root()
+    root = source_root()
     if root is not None:
         return root / "schemas"
     raise FileNotFoundError("Cannot locate schemas directory (source checkout or wheel _data)")
@@ -187,7 +189,7 @@ def claude_template_dir() -> Path:
     bundled = PACKAGE_DIR / "_data" / "claude"
     if bundled.is_dir():
         return bundled
-    root = _source_root()
+    root = source_root()
     if root is not None:
         return root / ".claude"
     raise FileNotFoundError("Cannot locate .claude template directory")
@@ -197,7 +199,7 @@ def trials_dir() -> Path:
     env = os.environ.get("AGENTIC_AUTOML_TRIALS_DIR")
     if env:
         return Path(env).expanduser().resolve()
-    root = _source_root()
+    root = source_root()
     if root is not None:
         return root / "trials"
     return Path.home() / ".agentic-automl" / "trials"
