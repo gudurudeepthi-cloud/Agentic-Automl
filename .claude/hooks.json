@@ -22,6 +22,18 @@
           }
         ]
       }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agentic-automl feedback-episodes capture --trial \"${TRIAL_DIR:-.}\"",
+            "async": true
+          }
+        ]
+      }
     ]
   }
 }

@@ -3,8 +3,11 @@
 This repo is the *harness*, not a trial. The runtime instructions loaded inside
 each trial workspace live in `.claude/CLAUDE.md`.
 
-- `src/agentic_automl/contracts.py` — the registries (artifacts, gates, requirements, skill map, order). Change the contract here first.
-- `src/agentic_automl/artifacts.py` — validator and sole writer of `state/run_state.json` and artifact files.
-- `schemas/` — one draft-07 schema per artifact plus `run_state.schema.json`. Adding an artifact means: registry entry, gate, requirements, schema, `SKILL_PRODUCES` entry, and test fixtures in `tests/conftest.py`.
-- The Python never trains models; ML logic belongs in `.claude/skills/*/SKILL.md`.
+- `src/agentic_automl/contracts.py`: the registries (artifacts, gates, requirements, skill map, order). Change the contract here first.
+- `src/agentic_automl/artifacts.py`: validator, and the only writer of `state/run_state.json` and artifact files.
+- `src/agentic_automl/cli.py`: launcher (new/resume/fork/...) and sub-tool dispatch. `state.py` has trial discovery, user config and transcript helpers.
+- `schemas/`: one draft-07 schema per artifact, plus `run_state.schema.json`. Adding an artifact means: registry entry, gate, requirements, schema, `SKILL_PRODUCES` entry, a `SKILL.md`, and test fixtures in `tests/conftest.py`.
+- `.claude/` is the runtime template copied into every trial. `.claude/hooks.json` holds the PreToolUse guards. Claude Code doesn't read that file itself; the launcher merges it into each trial's `settings.json`, which keeps the guards out of sessions in this repo.
+- `ml_domain` enums in the contract/plan schemas must match `.claude/skills/domains/registry.json` (a test enforces this).
+- The Python never trains models. ML logic belongs in `.claude/skills/*/SKILL.md`.
 - Run `pytest` before committing.

@@ -454,6 +454,7 @@ CONFIG_SETTERS = {
     "set-scratch-bucket": "scratch_bucket",
     "set-runtime-python": "runtime_python",
     "set-package-index": "package_index",
+    "set-feedback-repo": "feedback_repo",
 }
 
 

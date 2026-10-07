@@ -36,6 +36,9 @@ def test_hooks_json_wires_guards():
     assert by_matcher["Write|Edit|MultiEdit|NotebookEdit"] == \
         'agentic-automl artifacts validate-write --trial "${TRIAL_DIR:-.}"'
     assert by_matcher["Bash"] == "agentic-automl bash-permissions check"
+    [capture] = load("hooks.json")["hooks"]["PostToolUseFailure"]
+    assert capture["matcher"] == "Bash" and capture["hooks"][0]["async"] is True
+    assert capture["hooks"][0]["command"].startswith("agentic-automl feedback-episodes capture")
 
 
 def _trial_settings(capsys) -> tuple[Path, dict]:
