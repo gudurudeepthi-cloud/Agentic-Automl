@@ -1,0 +1,27 @@
+{
+  "description": "PreToolUse enforcement for trial workspaces. Claude Code does not read this file directly: the launcher merges these hooks into <trial>/.claude/settings.json on every new/resume/fork.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agentic-automl artifacts validate-write --trial \"${TRIAL_DIR:-.}\"",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agentic-automl bash-permissions check",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

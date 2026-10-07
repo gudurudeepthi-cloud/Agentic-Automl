@@ -55,6 +55,29 @@ class CliError(Exception):
 def sync_runtime_files(trial: Path) -> None:
     """Copy the runtime .claude tree into the trial (settings.local.json is trial-owned)."""
     shutil.copytree(claude_template_dir(), trial / ".claude", dirs_exist_ok=True, ignore=RUNTIME_IGNORE)
+    materialize_settings(trial)
+
+
+def materialize_settings(trial: Path) -> None:
+    """Merge hooks.json into the trial's settings.json (Claude Code only reads hooks from
+    settings files) and point the runtime-python rules at the configured interpreter."""
+    claude_dir = trial / ".claude"
+    settings_file = claude_dir / "settings.json"
+    settings = json.loads(settings_file.read_text(encoding="utf-8"))
+    hooks_file = claude_dir / "hooks.json"
+    if hooks_file.is_file():
+        merged = settings.setdefault("hooks", {})
+        for event, entries in json.loads(hooks_file.read_text(encoding="utf-8"))["hooks"].items():
+            merged[event] = entries + [e for e in merged.get(event, []) if e not in entries]
+    py = st.runtime_python()
+    if py != st.DEFAULT_RUNTIME_PYTHON:
+        settings["permissions"]["allow"] = [
+            rule.replace(st.DEFAULT_RUNTIME_PYTHON, py) for rule in settings["permissions"]["allow"]
+        ]
+        runtime_md = claude_dir / "CLAUDE.md"
+        runtime_md.write_text(runtime_md.read_text(encoding="utf-8").replace(st.DEFAULT_RUNTIME_PYTHON, py),
+                              encoding="utf-8")
+    settings_file.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
 
 
 def trust_requested(flag: bool) -> bool:
@@ -205,6 +228,8 @@ def launch_claude(trial: Path, cmd: list[str], *, mode: str, dev: bool = False) 
     env = os.environ.copy()
     env["TRIAL_DIR"] = str(trial)
     env["UV_PROJECT"] = str(source_root() or PACKAGE_DIR)
+    # Hooks shell out to `agentic-automl`; make sure the one running this launcher is found first.
+    env["PATH"] = os.pathsep.join([str(Path(sys.executable).parent), env.get("PATH", "")])
     if dev:
         env["AGENTIC_AUTOML_DEV"] = "1"
     artifacts.record_session(trial, mode)

@@ -1,0 +1,55 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(./.claude/**)",
+      "Read(./schemas/**)",
+      "Read(./docs/**)",
+      "Read(./src/**)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(pwd)",
+      "Bash(grep:*)",
+      "Bash(agentic-automl artifacts *)",
+      "Bash(agentic-automl session-analysis *)",
+      "Bash(agentic-automl feedback-episodes *)",
+      "Bash(agentic-automl config *)",
+      "Bash(/opt/conda/bin/python *)",
+      "Bash(mkdir -p *)",
+      "Edit(/trials/**/work/**)",
+      "Edit(./work/**)",
+      "Write(./work/**)",
+      "Read(~/.agentic-automl/skills/**)",
+      "Write(~/.agentic-automl/skills/**)",
+      "Edit(~/.agentic-automl/skills/**)",
+      "Skill(*)"
+    ],
+    "deny": [
+      "Write(./state/**)",
+      "Edit(./state/**)"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '\\a\\033]0;agentic-automl: waiting for you\\007' > /dev/tty 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '\\a\\033]0;agentic-automl: turn finished\\007' > /dev/tty 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
