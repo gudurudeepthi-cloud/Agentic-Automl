@@ -195,14 +195,30 @@ def claude_template_dir() -> Path:
     raise FileNotFoundError("Cannot locate .claude template directory")
 
 
+def storage_dir() -> Path:
+    """Root for trials/ and results/, kept outside the code repo.
+
+    Precedence: $AGENTIC_AUTOML_STORAGE_DIR > config `storage_dir` > ~/agentic-automl.
+    """
+    from agentic_automl.state import load_config  # lazy: state imports this module
+
+    env = os.environ.get("AGENTIC_AUTOML_STORAGE_DIR") or load_config().get("storage_dir")
+    return Path(env).expanduser().resolve() if env else Path.home() / "agentic-automl"
+
+
 def trials_dir() -> Path:
     env = os.environ.get("AGENTIC_AUTOML_TRIALS_DIR")
     if env:
         return Path(env).expanduser().resolve()
-    root = source_root()
-    if root is not None:
-        return root / "trials"
-    return Path.home() / ".agentic-automl" / "trials"
+    return storage_dir() / "trials"
+
+
+def results_dir() -> Path:
+    """Durable results ledger; defaults to a sibling of the trials dir."""
+    env = os.environ.get("AGENTIC_AUTOML_RESULTS_DIR")
+    if env:
+        return Path(env).expanduser().resolve()
+    return trials_dir().parent / "results"
 
 
 def artifact_path(trial_dir: str | os.PathLike[str], key: str) -> Path:

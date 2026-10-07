@@ -35,6 +35,7 @@ SUBTOOLS = {
     "bash-permissions": "agentic_automl.bash_permissions",
     "summarize-trials": "agentic_automl.trial_summary",
     "feedback-episodes": "agentic_automl.feedback_episodes",
+    "results": "agentic_automl.results",
 }
 
 TRUST_FILE = "work/trust.md"
@@ -243,7 +244,18 @@ def launch_claude(trial: Path, cmd: list[str], *, mode: str, dev: bool = False) 
     session_id = st.latest_session_id(trial, since=started - 1)
     if session_id:
         artifacts.attach_session_id(trial, session_id)
+    update_results(trial)
     return code
+
+
+def update_results(trial: Path) -> None:
+    """Refresh the durable results ledger; never let a ledger problem break the launcher."""
+    from agentic_automl import results
+
+    try:
+        results.record_trial(trial)
+    except Exception as exc:  # noqa: BLE001
+        print(f"agentic-automl: results ledger not updated ({exc})", file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -284,6 +296,7 @@ def cmd_new(args: argparse.Namespace) -> int:
     trial = st.unique_trial_dir(st.new_trial_id())
     artifacts.ensure_state(trial, goal=args.goal, dataset_path=args.dataset)
     prepare_trial(trial, args.trust)
+    update_results(trial)
     if args.no_launch:
         _emit({"ok": True, "trial_dir": str(trial)})
         return 0
@@ -338,6 +351,7 @@ def cmd_fork(args: argparse.Namespace) -> int:
     )
     artifacts.save_state(dst, state)
     prepare_trial(dst, args.trust)
+    update_results(dst)
 
     session = None
     if args.copy_transcript:
@@ -455,13 +469,17 @@ CONFIG_SETTERS = {
     "set-runtime-python": "runtime_python",
     "set-package-index": "package_index",
     "set-feedback-repo": "feedback_repo",
+    "set-storage-dir": "storage_dir",
 }
 
 
 def cmd_config(args: argparse.Namespace) -> int:
     if args.action == "show":
+        from agentic_automl.contracts import results_dir, trials_dir
+
         _emit({"config_path": str(st.config_path()), "config": st.load_config(),
-               "runtime_python": st.runtime_python()})
+               "runtime_python": st.runtime_python(), "trials_dir": str(trials_dir()),
+               "results_dir": str(results_dir())})
         return 0
     if args.value is None:
         raise CliError(f"config {args.action} needs a value")

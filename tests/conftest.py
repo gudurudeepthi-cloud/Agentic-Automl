@@ -164,6 +164,8 @@ def _isolated_trials_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("AGENTIC_AUTOML_TRIALS_DIR", str(tmp_path / "trials"))
     monkeypatch.delenv("AGENTIC_AUTOML_TRIAL", raising=False)
     monkeypatch.delenv("TRIAL_DIR", raising=False)
+    monkeypatch.delenv("AGENTIC_AUTOML_STORAGE_DIR", raising=False)
+    monkeypatch.delenv("AGENTIC_AUTOML_RESULTS_DIR", raising=False)
     monkeypatch.delenv("AGENTIC_AUTOML_TRUST", raising=False)
     monkeypatch.delenv("AGENTIC_AUTOML_PYTHON", raising=False)
     monkeypatch.setenv("AGENTIC_AUTOML_HOME", str(tmp_path / "home"))

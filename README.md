@@ -31,8 +31,22 @@ Pass Claude Code flags after `--`, e.g. `agentic-automl resume -- --permission-m
 `--trust` (or `AGENTIC_AUTOML_TRUST=1`) gives a trial broader auto-approval for the
 runtime Python and mutating `gsutil`. It is sticky per trial and is not skip-permissions.
 
-Trials live in `trials/<UTC timestamp>[--slug]/` (gitignored). Override the
-location with `AGENTIC_AUTOML_TRIALS_DIR`.
+## Storage
+
+Trials and results are kept outside the code repo, by default in `~/agentic-automl/`:
+
+```
+~/agentic-automl/
+  trials/<UTC timestamp>[--slug]/   full trial workspace (state, scripts, models, reports)
+  results/trials/<trial_id>.json    durable per-trial result record
+  results/leaderboard.csv|md        all trials side by side
+```
+
+Move it with `agentic-automl config set-storage-dir <path>` (e.g. a shared
+drive) or `AGENTIC_AUTOML_STORAGE_DIR`. `AGENTIC_AUTOML_TRIALS_DIR` /
+`AGENTIC_AUTOML_RESULTS_DIR` override each part separately. The ledger refreshes
+after every session. Result records outlive deleted trials. `agentic-automl results`
+shows the leaderboard, and `agentic-automl results sync` rebuilds it from all trials.
 
 ## Workflow
 
