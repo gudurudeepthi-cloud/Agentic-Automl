@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "preprocessing_summary.schema.json",
+  "title": "Preprocessing summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "engine", "pipeline_script", "pipeline_artifact", "input_features",
+    "output_feature_count", "transformations", "dropped_columns",
+    "train_rows", "test_rows"
+  ],
+  "properties": {
+    "engine": {"enum": ["parity-ml", "open_source"]},
+    "pipeline_script": {"type": "string", "minLength": 1},
+    "pipeline_artifact": {"type": "string", "minLength": 1, "description": "Serialized fitted pipeline (e.g. outputs/pipeline/preprocessor.joblib)."},
+    "input_features": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "output_feature_count": {"type": "integer", "minimum": 1},
+    "transformations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "description"],
+        "properties": {
+          "step": {"type": "string", "minLength": 1},
+          "columns": {"type": "array", "items": {"type": "string"}},
+          "description": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "dropped_columns": {"type": "array", "items": {"type": "string"}},
+    "train_rows": {"type": "integer", "minimum": 0},
+    "validation_rows": {"type": ["integer", "null"], "minimum": 0},
+    "test_rows": {"type": "integer", "minimum": 0},
+    "leakage_checks": {"type": "array", "items": {"type": "string"}},
+    "notes": {"type": "string"}
+  }
+}

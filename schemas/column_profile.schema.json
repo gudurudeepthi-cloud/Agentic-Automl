@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "column_profile.schema.json",
+  "title": "Column profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dataset_path", "columns"],
+  "properties": {
+    "dataset_path": {"type": "string", "minLength": 1},
+    "columns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "dtype", "semantic_type", "role", "missing_fraction", "n_unique"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "dtype": {"type": "string", "minLength": 1},
+          "semantic_type": {"type": "string", "minLength": 1, "description": "Free string, e.g. 'numeric', 'categorical', 'free_text', 'date'."},
+          "role": {"enum": ["feature", "target", "id", "weight", "split", "time", "drop", "leakage_suspect"]},
+          "missing_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+          "n_unique": {"type": ["integer", "null"], "minimum": 0},
+          "stats": {"type": "object"},
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "generated_at": {"type": "string"},
+    "notes": {"type": "string"}
+  }
+}

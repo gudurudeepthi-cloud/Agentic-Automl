@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentic-automl"
+version = "0.1.0"
+description = "A validator-gated Claude Code harness for supervised tabular ML"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["jsonschema>=4"]
+
+[project.optional-dependencies]
+phase1 = [
+    "pandas",
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "seaborn",
+    "pyarrow",
+    "gcsfs",
+]
+xai = ["shap"]
+torch = ["torch"]
+tensorflow = ["tensorflow"]
+deep-learning = ["torch", "tensorflow"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+agentic-automl = "agentic_automl.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentic_automl"]
+
+# Ship schemas + the runtime .claude tree inside the wheel so an installed
+# launcher can validate artifacts and scaffold trials without a source checkout.
+[tool.hatch.build.targets.wheel.force-include]
+"schemas" = "agentic_automl/_data/schemas"
+".claude" = "agentic_automl/_data/claude"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

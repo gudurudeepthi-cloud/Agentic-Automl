@@ -1,0 +1,11 @@
+{
+  "description": "Optional ml_domain overlays. Each key must also appear in the ml_domain enum of prediction_contract and workflow_plan schemas (enforced by tests/test_schemas.py).",
+  "domains": {
+    "credit_risk": {
+      "label": "Credit risk",
+      "overlay": "domains/credit_risk.md",
+      "applies_to_skills": ["prediction-contract", "workflow-planning", "evaluation", "model-development-documentation"],
+      "summary": "Probability-of-default style problems: monotonic constraints, reject-inference caveats, KS/Gini reporting, out-of-time validation."
+    }
+  }
+}

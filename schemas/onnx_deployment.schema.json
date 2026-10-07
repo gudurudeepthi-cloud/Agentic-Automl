@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "onnx_deployment.schema.json",
+  "title": "ONNX deployment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["onnx_path", "opset", "input_signature", "parity_check", "export_script"],
+  "properties": {
+    "onnx_path": {"type": "string", "minLength": 1},
+    "opset": {"type": "integer", "minimum": 1},
+    "input_signature": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "dtype"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "dtype": {"type": "string", "minLength": 1},
+          "shape": {"type": "array"}
+        }
+      }
+    },
+    "parity_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "max_abs_diff", "n_samples"],
+      "properties": {
+        "passed": {"type": "boolean"},
+        "max_abs_diff": {"type": "number", "minimum": 0},
+        "tolerance": {"type": "number", "minimum": 0},
+        "n_samples": {"type": "integer", "minimum": 1}
+      }
+    },
+    "export_script": {"type": "string", "minLength": 1},
+    "fused_preprocessing": {"type": "boolean"},
+    "notes": {"type": "string"}
+  }
+}

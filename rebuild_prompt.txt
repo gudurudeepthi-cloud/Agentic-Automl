@@ -1,0 +1,1046 @@
+============================================================
+BUILD: Agentic AutoML
+A validator-gated Claude Code harness for supervised tabular ML
+(In-depth rebuild prompt — hand this to a fresh Claude Code session)
+============================================================
+
+You are building "Agentic AutoML": a thin Python CLI (`agentic-automl`) that
+launches Claude Code inside a per-trial workspace and drives a gated,
+artifact-driven ML workflow through natural language. The human describes a
+dataset + goal in chat; the agent profiles data, plans, writes/runs editable
+Python, trains, evaluates, and saves schema-validated artifacts. A Python
+Validator owns all state and enforces step ordering; markdown "skills" encode
+the ML recipes; PreToolUse hooks block direct writes to artifact paths.
+
+This is NOT a monolithic AutoML script. The five pillars are:
+(1) CLI launcher,
+(2) validator/state engine,
+(3) JSON schemas,
+(4) markdown skills,
+(5) hooks+permissions+runtime CLAUDE.md.
+
+Build them in that order and keep the agent as the ML reasoner — the Python
+code never trains anything.
+
+
+REPOSITORY LAYOUT
+-----------------
+
+agentic-automl/
+├── pyproject.toml                 # hatchling build; console_scripts: agentic-automl
+├── README.md
+├── CLAUDE.md                      # repo-orientation note (for contributors)
+├── AGENTS.md                      # contributor pointers -> repo/skills
+├── Makefile                       # dev entry points for the eval harness (pillar 6)
+├── run.py                          # checkout shim: run the CLI without pip install -e
+├── .claude/
+│   ├── CLAUDE.md                  # RUNTIME instructions auto-loaded per trial
+│   ├── hooks.json                 # PreToolUse artifact-write guard + Bash auto-allow
+│   ├── settings.json              # permissions allowlist + notification/stop hooks
+│   ├── trial-backtrack.md
+│   └── skills/
+│       ├── SKILLS.md              # human/agent index of skills
+│       ├── <skill>/SKILL.md       # one dir per skill, frontmatter + steps
+│       ├── references/*.md        # shared how-tos (gcs auth, long-running, etc.)
+│       ├── domains/registry.json  # optional ml_domain overlays
+│       └── planned/               # draft skills, not validator-wired
+├── schemas/*.schema.json          # one per registered artifact (draft-07)
+├── src/agentic_automl/
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── cli.py                     # launcher: new/resume/fork/status/... + dispatch
+│   ├── contracts.py               # REGISTRIES: artifacts, gates, requirements,
+│   │                               # skill map, order
+│   ├── artifacts.py               # validator + run_state owner + "artifacts" subcommands
+│   ├── state.py                   # state helpers
+│   ├── session_analysis.py
+│   └── feedback_episodes.py       # as needed
+├── scripts/                       # contributor/eval/benchmark/release scripts (pillar 7)
+├── benchmarks/                    # datasets.json + datasets/ + evals/ (pillar 6)
+├── repo/skills/                   # maintainer-facing contributor skills (pillar 8)
+├── trials/<trial_id>/             # created at runtime; gitignored
+└── tests/                         # pytest: schemas, gates, ordering, cli, permissions
+
+
+PYTHON PACKAGING (pyproject.toml)
+---------------------------------
+
+- Build backend: `hatchling`.
+- `requires-python = ">=3.11"`.
+- Launcher runtime dependency is ONLY `jsonschema>=4`.
+- The modeling stack is NOT a launcher dependency — it lives in a conda image
+  at runtime.
+- Optional extras (never pulled by bare install):
+  - `phase1`: pandas, numpy, scipy, scikit-learn, matplotlib, seaborn, pyarrow, gcsfs
+  - `xai`: shap
+  - `torch`
+  - `tensorflow`
+  - `deep-learning`
+  - `dev`: pytest
+- `[project.scripts] agentic-automl = "agentic_automl.cli:main"`.
+
+
+============================================================
+PILLAR 2 — VALIDATOR + STATE ENGINE (build FIRST)
+============================================================
+
+contracts.py — the registries (the heart of the system)
+---------------------------------------------------------
+
+Define these exact structures:
+
+ARTIFACT_REGISTRY — key -> {path, schema, label}
+
+prediction_contract      -> prediction_contract.json
+dataset_profile          -> dataset_profile.json
+column_profile           -> column_profile.json
+workflow_plan            -> state/workflow_plan.json
+preprocessing_summary    -> outputs/pipeline/preprocessing_summary.json
+training_summary         -> outputs/model/training_summary.json
+onnx_deployment          -> outputs/model/onnx_deployment.json
+auto_research_summary    -> outputs/model/auto_research_summary.json
+evaluation_summary       -> outputs/report/evaluation_summary.json
+explainability_summary   -> outputs/report/explainability_summary.json
+model_development_documentation
+                         -> outputs/report/model_development_documentation.json
+
+(schema = the matching <key>.schema.json filename)
+
+
+GATE_REGISTRY — gate name -> {satisfied_by: <artifact_key>, predicate, description}
+
+One gate per artifact, named `<artifact>_complete` (except the contract gate
+is `prediction_contract_approved` and the plan gate is
+`workflow_plan_approved`).
+
+Default predicate returns True on existence (gates are existence-based).
+
+
+ARTIFACT_GATE_REQUIREMENTS — artifact key -> gates that must hold before save
+
+prediction_contract:
+    []
+
+dataset_profile:
+    [prediction_contract_approved]
+
+column_profile:
+    [prediction_contract_approved]
+
+workflow_plan:
+    [dataset_profile_complete, column_profile_complete]
+
+preprocessing_summary:
+    [workflow_plan_approved]
+
+training_summary:
+    [preprocessing_complete]
+
+onnx_deployment:
+    [training_complete]
+
+evaluation_summary:
+    [training_complete]
+
+explainability_summary:
+    [training_complete]
+
+auto_research_summary:
+    [training_complete]
+
+model_development_documentation:
+    [evaluation_complete]
+
+
+SKILL_PRODUCES — skill name -> artifact keys it may write
+
+prediction-contract             -> [prediction_contract]
+data-profiling                  -> [column_profile, dataset_profile]
+workflow-planning               -> [workflow_plan]
+data-preprocessing              -> [preprocessing_summary]
+parity-ml-preprocessing         -> [preprocessing_summary]   # open-source opt-out
+training                        -> [training_summary]        # default engine
+parity-ml-export                -> [onnx_deployment]
+evaluation                      -> [evaluation_summary]
+explainability                  -> [explainability_summary]
+auto-research                   -> [auto_research_summary]
+model-development-documentation -> [model_development_documentation]
+
+
+WORKFLOW_ORDER = [
+    prediction-contract,
+    data-profiling,
+    workflow-planning,
+    data-preprocessing,
+    training,
+    evaluation
+]
+(the canonical baseline chain).
+
+OPTIONAL_SKILLS_AFTER_CANONICAL =
+    (explainability, model-development-documentation).
+
+
+Helpers:
+- `artifact_path(trial_dir, key)`
+- `schema_path(key)`
+- `artifact_key_for_path(trial_dir, candidate)` (reverse lookup, used by the
+  write guard)
+- Resolve the project root (schemas dir) and a trials dir robustly whether run
+  from a source checkout or an installed wheel.
+
+
+artifacts.py — validator + `agentic-automl artifacts <sub>` subcommands
+-----------------------------------------------------------------------
+
+`run_state.json` (under `state/`) is the SINGLE SOURCE OF TRUTH. Never let the
+agent edit it or artifact files directly. Subcommands (all take `--trial`,
+output JSON):
+
+- `begin-skill <name>`
+  -> `{allowed: bool, redirect_to: <skill|null>, state: <snapshot>}`.
+  Compute the next expected skill from WORKFLOW_ORDER + which artifacts exist.
+
+- `save-artifact <key> --payload <json_file> --source-skill <name>`
+  1. Load payload JSON.
+  2. Validate against `schemas/<key>.schema.json` (jsonschema draft-07).
+  3. Check every gate in `ARTIFACT_GATE_REQUIREMENTS[key]` holds; reject with a
+     clear message + which upstream skill to run if not.
+  4. Snapshot decision-feedback diff (see feedback loop) if applicable.
+  5. Write canonical file to `ARTIFACT_REGISTRY[key]["path"]`, append to
+     `run_state.artifacts`, flip the satisfied gate, append to validation_log,
+     bump updated_at.
+
+Reject (non-zero exit + JSON error) on schema or gate failure; the agent fixes
+and retries.
+
+- `next-step`
+  -> the next skill in the chain given current artifacts, or
+     `{next_skill: null, canonical_workflow_complete: true,
+       optional_next_skills: [...]}`.
+  When `evaluation_summary` exists, inject auto-research between training and
+  evaluation when `prediction_contract.model_preference == "auto_research"`.
+  Suggest parity-ml-export before evaluation when
+  `preprocessing_summary.engine == "parity-ml"` and `onnx_deployment` is absent.
+
+- `status`
+  -> trial snapshot (goal, dataset, artifacts on disk, gate states).
+
+- `set-trial-slug <slug>`
+  -> record `pending_slug` (applied on next resume; do not rename the dir
+  mid-session).
+
+- `validate-write --trial <dir>`
+  -> the PreToolUse guard: read the hook JSON on stdin, resolve the target path,
+  and if it maps to a registered artifact path (via `artifact_key_for_path`)
+  emit a deny decision (force save-artifact); otherwise allow.
+
+Also expose Python APIs used by the CLI:
+`ensure_state`, `evaluate_gates`, `apply_pending_slug`, `record_developer_focus`.
+
+`run_state.json` schema (validate it too) requires:
+`trial_id`, `created_at`, `updated_at`, `artifacts[]`, `gates{}`, `sessions[]`,
+`validation_log[]`; plus optional `goal`, `dataset_path`, `pending_slug`,
+`forked_from`, `package_version`, `last_claude_session_id`,
+`previous_trial_dirs[]`.
+
+
+============================================================
+PILLAR 3 — JSON SCHEMAS (draft-07, additionalProperties:false where closed)
+============================================================
+
+Author one schema per artifact key. The `prediction_contract` schema is the
+richest — reproduce it precisely.
+
+Required fields:
+`task_type`, `target_kind`, `business_context`, `deployment_intent`,
+`dataset_path`, `dataset_location`, `data_source`, `data_segments`,
+`schema_files`, `split_strategy`, `split_column`, `split_train_value`,
+`split_test_value`, `time_column`, `split_ratio`, `target_column`,
+`target_labels`, `entity_id_column`, `weight_column`, `primary_metric`,
+`report_metrics`, `model_preference`, `model_space`, `scale_assumption`.
+
+Key rules (enums are for gates/infra only; problem semantics are free strings):
+
+- `task_type` — free string (min length 1), NOT an enum.
+- `target_kind` — enum [binary, multiclass, continuous, other].
+- `deployment_intent` — enum [exploratory_baseline, production_parity].
+- `dataset_location` — enum [local, gcs] (infer from `gs://` prefix).
+- `data_source` — enum [internal, external].
+- `split_strategy` — enum
+  [pre_split, predefined_column, temporal, random_stratified, random].
+- `model_preference` — enum
+  [single_baseline, user_specified, auto_research].
+- `scale_assumption` — enum
+  [local_workstation, large_data_distributed_tbd].
+- `ml_domain` — optional enum sourced from `domains/registry.json`
+  (e.g. [credit_risk]).
+- `primary_metric`, `report_metrics[]`, `model_space[]` — free strings.
+
+`data_segments` — array (minItems 1) of `{path, format, role, file_count}`,
+where `role` is in [train, test, full, other]. Enforce via oneOf that
+segments contain EITHER a full role OR both train + test.
+
+Conditional `allOf` blocks tie split fields to `split_strategy`:
+- temporal -> `time_column` + `split_ratio`, others null
+- predefined_column -> `split_column` + train/test values, ratio null
+- random* -> `split_ratio`
+- pre_split -> all split extras null
+
+`target_labels` conditional:
+- binary -> exactly 2
+- multiclass -> >=3
+- continuous -> null
+
+`model_space` conditional on `model_preference` x `deployment_intent`:
+- exploratory_baseline + single_baseline -> null
+- user_specified -> minItems 1
+- auto_research -> optional hints
+
+Optional `research_max_experiments` (int >=1); auto-research defaults to 15.
+
+The other schemas:
+`dataset_profile`, `column_profile`, `workflow_plan`,
+`preprocessing_summary`, `training_summary`, `onnx_deployment`,
+`evaluation_summary`, `explainability_summary`, `auto_research_summary`,
+`model_development_documentation`
+
+should each capture their step's outputs.
+
+Notably:
+- `workflow_plan` carries modeling_plan, preprocessing_plan (engine in
+  [parity-ml (default), open_source]), optional parity_requirements, optional
+  distributed_training_plan, and optional ml_domain.
+- Workflow plan wins over contract when both set.
+- `preprocessing_summary.engine` records which engine ran.
+- `evaluation_summary` carries metrics, trust_checks, narrative.
+
+Ask me for the exact field lists per schema, or infer sensible required sets.
+
+
+============================================================
+PILLAR 1 — CLI LAUNCHER (cli.py)
+============================================================
+
+`main()` builds an argparse parser and dispatches. It OWNS workspace setup and
+launches `claude` (Claude Code) via subprocess (not exec — preserves TTY under
+`uv run`) in the trial dir with:
+- `TRIAL_DIR=<abs path>`
+- `UV_PROJECT=<package dir>`
+
+Subcommands:
+
+- `bare`
+  -> interactive picker over recent trials, then resume.
+
+- `new [--dataset PATH] [--goal "..."]`
+  -> create `trials/<UTC-timestamp>/` with subdirs:
+     `work/`, `outputs/pipeline/`, `outputs/model/`, `outputs/report/`,
+     `preprocessed_data/`, `state/`
+     write initial `state/run_state.json` (record goal/dataset), copy in
+     `.claude/` runtime files, launch Claude.
+
+- `resume [<trial>] [--fresh] [--summarize] [--model M]`
+  -> apply pending slug, pick most-recent-session trial (fallback:
+     most recently modified), launch.
+     `--fresh` = new chat on same trial (writes `work/session_brief.md`).
+     `--summarize` also extracts prior transcript text.
+
+- `fork [<trial>] [--name N] [--copy-transcript]`
+  -> deep-copy trial tree to a new trial dir, write `forked_from` into state,
+     fresh chat by default.
+
+- `status [--trial]`
+- `summarize-trials`
+- `community`
+
+- `--trust` flag (on new/resume; also env `AGENTIC_AUTOML_TRUST=1`):
+  write `work/trust.md` (sticky per trial) and inject broader permission
+  allows for `/opt/conda/bin/python ...` and mutating gsutil.
+  NOT full skip-permissions.
+
+- `--dev` flag:
+  developer mode from a source checkout.
+
+- `--version / --version / update / rollback / trial repair`:
+  version status and `uv tool install agentic-automl@latest` flows.
+
+- Sub-tool dispatch:
+  `artifacts ...` -> `artifacts.py`, plus stubs/impls for
+  `session-analysis`, `feedback-episodes`, `bash-permissions`,
+  `library-skills`.
+
+- Overrides:
+  `list|reconcile`, `config set-dataproc-project`,
+  `config set-scratch-bucket`.
+
+- Unknown flags on `new`/`resume` pass through to Claude Code.
+
+
+============================================================
+PILLAR 5 — RUNTIME FILES
+============================================================
+
+`.claude/hooks.json` + `settings.json` (PreToolUse enforcement)
+----------------------------------------------------------------
+
+Write guard:
+PreToolUse matcher `Write|Edit|MultiEdit` runs:
+
+`agentic-automl artifacts validate-write --trial "${TRIAL_DIR:-.}"`
+
+and denies writes that target a registered artifact path.
+
+Bash auto-allow:
+PreToolUse matcher Bash allows a safe prefix set:
+- `agentic-automl artifacts ...`
+- `agentic-automl session-analysis ...`
+- `/opt/conda/bin/python ...`
+- `mkdir -p ...`
+
+by emitting a `permissionDecision: allow` hookSpecificOutput.
+
+`settings.json` permissions.allow:
+- read-only `Read(./.claude/**|./schemas/**|./docs/**|./src/**)`
+- light Bash (`ls *`, `cat *`, `head *`, `tail *`, `pwd`, `grep:*`)
+- `agentic-automl artifacts *`
+- `feedback-episodes *`
+- `config *`
+- `/opt/conda/bin/python *`
+- `mkdir -p *`
+- `Edit(/trials/**/work/**)`
+- `Read/Write/Edit(~/.agentic-automl/skills/**)`
+- `Skill(*)`
+
+Add Notification and Stop hooks that ring the terminal bell + set the
+window title.
+
+`.claude/CLAUDE.md` (runtime instructions — the most important prose file)
+-------------------------------------------------------------------------
+
+The runtime CLAUDE.md should instruct Claude Code to:
+- treat `run_state.json` as the single source of truth;
+- never directly edit canonical artifact JSON or `run_state.json`;
+- use the registered skills in the required workflow order;
+- use `agentic-automl artifacts begin-skill`, `save-artifact`, `next-step`,
+  `status`, and `validate-write`;
+- write intermediate/editable Python only under `trials/<trial>/work/`;
+- save canonical outputs only through the validator;
+- fix schema/gate errors and retry;
+- keep the agent as the ML reasoner while Python performs the actual data/ML
+  execution inside the runtime environment.
+
+
+============================================================
+IMPLEMENTATION / BEHAVIOR REQUIREMENTS
+============================================================
+
+1. The validator is authoritative.
+2. Artifact paths are protected by the PreToolUse write guard.
+3. Every canonical artifact must validate against its JSON Schema.
+4. Every artifact must satisfy all upstream gates before it can be saved.
+5. The agent must be redirected to the earliest unmet skill when a requested
+   skill is blocked.
+6. `save-artifact` must fail cleanly with non-zero exit + machine-readable
+   JSON error on schema or gate failure.
+7. `next-step` must derive the next skill from actual artifacts/state rather
+   than trusting the agent's memory.
+8. The canonical workflow is:
+   prediction-contract -> data-profiling -> workflow-planning ->
+   data-preprocessing -> training -> evaluation.
+9. Optional post-canonical skills are explainability and
+   model-development-documentation.
+10. Auto-research is injected between training and evaluation when
+    `prediction_contract.model_preference == "auto_research"`.
+11. Parity-ML export is suggested before evaluation when preprocessing used
+    `parity-ml` and ONNX deployment is absent.
+12. The launcher must preserve an interactive Claude Code TTY by using
+    subprocess rather than exec.
+13. The modeling stack must not be installed as a launcher dependency.
+14. Trials are isolated and gitignored.
+15. The Python implementation is infrastructure/validation/state management;
+    it is NOT the AutoML reasoner and must not itself train models.
+
+
+============================================================
+END OF REBUILD PROMPT
+============================================================
+
+
+============================================================
+RUNTIME CLAUDE.md — ADDITIONAL REQUIREMENTS
+============================================================
+
+Auto-loaded per trial. Must instruct the agent:
+
+- Role & intake: read `state/run_state.json` for goal/dataset; else ask.
+  Route:
+  (A) build a model -> `begin-skill prediction-contract`;
+  (B) dataset-only -> `data-profiling` (needs a contract first);
+  (C) other -> confirm scope.
+  Explore before asking (inspect formats/columns/dtypes rather than ask);
+  the only things to ask are dataset path, target column (asked, never
+  inferred from values), and business context.
+
+- What the wrapper owns vs the agent owns:
+  wrapper owns directory layout, `run_state`, schema validation, and gates;
+  agent owns ML reasoning, code, and artifact payloads.
+  Agent NEVER writes artifact paths directly (hook rejects it) — always
+  through `save-artifact`.
+
+- Trial directory layout:
+  `work/` = lab notebook (exploratory scripts, descriptive names, no heredocs);
+  `outputs/{pipeline,model,report}/` = deliverables;
+  `preprocessed_data/` = train/test parquet;
+  `state/` = wrapper-owned.
+
+- Python runtime: use `/opt/conda/bin/python` for all ML work; write scripts
+  to files (never heredocs — they break auto-approval + reproducibility).
+  Keep `agentic-automl ...` for validator/lifecycle only.
+
+- Validator CLI contract:
+  `begin-skill` before any skill work (obey `redirect_to`);
+  `save-artifact` to persist;
+  `next-step` when unsure;
+  `status` to inspect;
+  `set-trial-slug` proactively once dataset + goal are clear.
+
+- Canonical workflow + branches:
+  baseline chain;
+  parity-ml path:
+  `parity-ml-preprocessing -> training -> parity-ml-export -> evaluation`
+  on raw through fused ONNX;
+  auto-research injection;
+  optional explainability + MDD.
+
+- Confirmation UX:
+  1–2 sentence preamble before non-obvious Bash;
+  confirm before contract/plan approval and any heavy compute;
+  background long jobs with `run_in_background:true` + `TaskOutput`
+  (no sleep/pgrep polling).
+
+- GCS auth:
+  credentials are inherited — run `gsutil`/`gcsfs` bare;
+  only fall back to a credentials path on an actual credentials error;
+  verify GCS with Python, not `gsutil`.
+
+
+============================================================
+.claude/skills/<skill>/SKILL.md FORMAT
+============================================================
+
+Each skill is a markdown file with YAML frontmatter (`name`, `description`) —
+the description is how the agent decides to invoke it.
+
+Body sections:
+- What it does
+- Inputs
+- Output (artifact key + which gate it flips)
+- Key notes
+- A Before you start block (`begin-skill <name>`)
+- A How to persist block (write draft to `work/<name>.json`, then
+  `save-artifact <key> --payload ... --source-skill <name>`)
+- Numbered Steps
+
+Write all skills in `SKILL_PRODUCES`.
+
+Also write:
+- `.claude/skills/SKILLS.md` (index)
+- `domains/registry.json` (optional overlays, e.g. `credit_risk`).
+
+
+============================================================
+PILLAR: FEEDBACK LOOP (build after the core works)
+============================================================
+
+- Episodes: append error/insight/decision records to
+  `work/feedback_episodes.jsonl` via:
+  `agentic-automl feedback-episodes ...`
+  (`list`, `resolve`, `insight`, `rationale`).
+  Bash PreToolUse hooks capture recoverable failures silently (async).
+
+- Decision capture:
+  `prediction-contract` and `workflow-planning` snapshot their proposal to
+  `work/decision_feedback/<key>.proposal.json` before approval.
+  `save-artifact` diffs proposal vs approved payload and logs a decision
+  episode.
+
+- Overrides:
+  `~/.agentic-automl/skills/overrides/<skill>.md`
+  — read after the platform SKILL (override wins); written only by an
+  `aaml-override` skill.
+
+- Sharing:
+  an `aaml-feedback` skill reconciles overrides + episodes, runs a
+  `feedback-filter`, and optionally files GitHub issues tagged by layer:
+  `[skill:]`, `[schema:]`, `[gate:]`, `[eval:]`, `[domain:]`.
+
+
+============================================================
+PILLAR 6 — CONTRIBUTOR / EVAL / BENCHMARK HARNESS
+(scripts/ + benchmarks/ + eval modules)
+============================================================
+
+The runtime product (pillars 1–5) is only half the repo. The other half is
+the contributor-facing evaluation + benchmark harness: how maintainers prove
+an agent-visible change (a skill, schema field, or validator rule) still
+works.
+
+The agent NEVER runs this during a modeling trial — it is a developer/CI
+surface, driven by `make` and `scripts/`. Build it AFTER the core engine +
+tests pass.
+
+Design rule (same spirit as the core):
+Python owns deterministic scoring/state; a scenario JSON is the contract;
+an optional real Claude run is the expensive tier. Most CI value comes from
+the zero-spend deterministic tier.
+
+
+EVAL HARNESS SOURCE MODULES (`src/agentic_automl/`)
+----------------------------------------------------
+
+- `eval_harness.py` — the big one. `argparse` CLI entry `main()` (wrapped by
+  `scripts/run_agent_evals.py`) and `recommend_evals_cli()` (wrapped by
+  `scripts/recommend_evals.py`).
+
+  Owns:
+  * TIERS (`--tier`): `deterministic | auth | component | e2e | real`.
+  * deterministic = no Claude spend (seed a trial, run deterministic scorers).
+  * auth = cheap GCS + GitHub + RMR credential preflight, no scenarios.
+  * component/e2e/real = real agent runs (`--trust-runtime`; RMR/Cosmos only,
+    cost money).
+  * dataclasses `EvalRunContext`, `AgentRunResult`, `PreparedEvalTrial`.
+  * `load_scenario_file` / `load_scenarios` (validate each against
+    `schemas/eval_scenario.schema.json`).
+  * scenario requires dataproc.
+  * runtime detection:
+    `rmr_python_path`, `is_rmr_cosmos_runtime`, `describe_rmr_runtime`;
+    env gates:
+    `AGENTIC_AUTOML_EVAL_ALLOW_DATAPROC`,
+    `AGENTIC_AUTOML_RMR_PYTHON`.
+  * auth probes:
+    `_probe_gcs`, `_probe_github`, `describe_auth_readiness`,
+    `render_auth_report` (with remediation strings).
+  * seeds a trial from a scenario's `seed`, copies fixture `trial_files` in,
+    runs the agent (`claude-rmr` runner) or the deterministic scorer, scores
+    invariants, and writes an `eval_result` JSON per scenario + a markdown
+    report.
+
+- `eval_scorers.py` — deterministic scorers:
+  `EvalScore`, `TrialScoreResult`, `score_trial(scenario, trial_dir)`.
+  Invariant types seen in scenarios:
+  `file_present`,
+  `file_contains` (patterns/absent_patterns, regex),
+  `feedback_credit_marker_parseable`,
+  artifact-present,
+  metric-band checks.
+
+  Helpers:
+  `count_validation_failures`,
+  `count_retries`,
+  `artifact_snapshot`,
+  `validate_smoke_metric_policy`,
+  `validate_metric_band_bounds`,
+  `_lookup_metric_value`.
+
+- `eval_reports.py` — status buckets + gate verdict.
+  `PASSING_STATUSES={"pass"}`.
+  `FAILING_STATUSES={"fail","harness-error","harness-unavailable","incomplete"}`.
+  `SKIPPED_STATUSES={"environment-unavailable"}`.
+  Render results table, summarize results, render summary,
+  `render_results_markdown`, and verdict.
+  An all-skipped suite is NOT a pass.
+
+- `eval_seed_roles.py` — derive roles from `smoke_config`, derive
+  `golden_id_columns(id, repo)`, and `assert_roles_match_golden(...)`.
+  Keeps generated seed column roles honest.
+
+- `benchmark_readiness.py` — audits `benchmarks/datasets.json` for
+  eval-readiness.
+  `ReadinessStatus` enum:
+  `metadata_draft`,
+  `ready_for_smoke`,
+  `ready_for_scored_eval`,
+  `blocked_metadata`,
+  `blocked_gcs`,
+  `blocked_owner_confirmation`.
+  Includes `DatasetReadiness`, `ReadinessIssue`, `CRITICAL_FIELDS`,
+  benchmark-dataset audit, markdown rendering, dataset-registry loading,
+  sample-manifest loading, and `main()`.
+
+- `synthetic_benchmarks.py` — tiny deterministic datasets for credential-free
+  smoke tests.
+  Includes `SyntheticColumn`, `SyntheticDatasetConfig`, `rows_for_config`;
+  `ColumnKind = numeric|integer|categorical|date|boolean`.
+
+- `remediations.py` — trial upgrade catalog
+  (`schemas/upgrade_remediations.json`).
+  Includes `RemediationAction`, `Remediation`, `load_catalog`,
+  `applicable_remediations`, `apply_remediation`, `repair_trial`,
+  `has_version_skew` — backs CLI `trial repair`.
+
+- `community_credit.py` — feedback leaderboard.
+  `CREDIT_MARKER = "aaml-feedback-credit:v1"`.
+  Includes `parse_credit_marker`, `entry_from_issue`, `make_ledger`,
+  `make_summary`; writes:
+  `community/feedback_credit_ledger.json` and
+  `community/feedback_leaderboard_summary.json`.
+
+- `trial_summary.py` — `collect_trial` / `print_table` / `main()`
+  (one row per trial); backs `summarize-trials`.
+
+
+============================================================
+EVAL / BENCHMARK SCHEMAS (`schemas/`)
+============================================================
+
+- `eval_scenario.schema.json` — required:
+  `id`, `dataset_id`, `entry_skill`, `seed`, `initial_prompt`,
+  `answer_bank`, `limits`, `expected_artifacts`, `invariants`, `environment`
+  (+ optional `suite`, `data_size`, `dataset_path`).
+
+  `seed = {kind: ...}` (e.g. empty, or a named fixture seed).
+
+  `answer_bank = [{match, answer}]` so a headless run can answer the agent's
+  clarifying questions.
+
+  `limits = {max_turns, max_budget_usd, timeout_seconds}`.
+
+  `invariants` are as above.
+
+- `eval_result.schema.json` — required:
+  `schema_version`, `scenario_id`, `dataset_id`, `run_id`, `runner`,
+  `status`, `started_at`, `ended_at`, `elapsed_seconds`,
+  `artifact_snapshot`, `scores`, `process_metrics`, `cost`, `logs`
+  (+ `stop_reason`, `trial_dir`).
+
+- `benchmark_dataset.schema.json` — required:
+  `id`, `status`, `access`, `brief`, `dataset_format`
+  (+ `task_type`, `target_variable`, `primary_metric`, `gcs_paths`,
+  `features`, `sizing`, `performance`).
+
+- `benchmark_samples.schema.json` — required:
+  `dataset_id`, `samples` (+ `synthetic_twins`).
+
+- `upgrade_remediations.json` — a DATA catalog (not a draft-07 schema),
+  read by `remediations.py`.
+
+
+============================================================
+BENCHMARKS/ LAYOUT
+============================================================
+
+- `benchmarks/datasets.json` — array of registry entries with benchmark
+  dataset shape:
+  `{id, status, access, brief, task_type, target_variable, primary_metric,
+    secondary_metrics, dataset_format, download_url(s), source, notes,
+    gcs_paths:{staging}, performance:{automl_best:{...}}, features, sizing}`.
+
+- `benchmarks/datasets/<id>/` — `brief.md`, `features.json`, `sizing.json`;
+  keep a `_TEMPLATE/` directory for new datasets.
+
+- `benchmarks/evals/scenarios/*.json` — one `eval_scenario` per file
+  (per skill + end-to-end), e.g.
+  `telco_churn_prediction_contract.json`,
+  `telco_churn_end_to_end.json`,
+  `give_me_some_credit_evaluation_scorer.json`,
+  `aaml_feedback_credit_marker.json`.
+
+- `benchmarks/evals/fixtures/{datasets,seeds,codegen}/` — committed smoke CSVs
+  and per-stage seed trials
+  (`<id>_after_profiling` / `<id>_after_planning` /
+   `<id>_after_training` / `_evaluated`)
+  so a scenario can start mid-chain without a real upstream run.
+
+- `benchmarks/evals/results/` (`.gitkeep`),
+  `benchmarks/evals/README.md`,
+  `benchmarks/review_rubric.md`.
+
+
+============================================================
+MAKEFILE — DEVELOPER ENTRY POINTS
+============================================================
+
+Wrap `scripts/run_agent_evals.py`.
+
+Variables:
+`PY ?= /opt/conda/bin/python`
+`OUTPUT ?= /tmp/agentic-automl-evals`
+`DATASET=`
+`SCENARIO=`
+`BASE ?= origin/main`
+`HEAD ?= HEAD`
+
+`EVAL := PYTHONPATH=src $(PY) scripts/run_agent_evals.py`
+`EVAL_RECOMMEND := PYTHONPATH=src $(PY) scripts/recommend_evals.py`
+
+Targets:
+- `help` — one-line orientation.
+- `eval-recommend` — `EVAL_RECOMMEND --base $(BASE) --head $(HEAD)`.
+- `eval-tiers` — `EVAL --help | sed` describing tiers.
+- `eval-deterministic` — `EVAL --tier deterministic --output-dir $(OUTPUT)
+  --report-md $(OUTPUT)/report.md + narrow`.
+- `eval-auth` — `EVAL --tier auth`.
+- `eval-component` — `EVAL --tier component --trust-runtime --output-dir ...
+  + narrow`.
+- `eval-e2e` — `EVAL --tier e2e --trust-runtime ...`.
+- `eval-real` — `EVAL --tier real --trust-runtime ...`.
+- `test` — `PYTHONPATH=src uv run --with pytest python -m pytest -q`.
+- `check` — `test + eval-deterministic` (the local CI gate).
+
+
+`run.py` — checkout shim:
+prepend `src/` to `sys.path`, import `agentic_automl.cli.main`, call it.
+Lets you run the CLI from a clone without `pip install -e`.
+
+
+============================================================
+PILLAR 7 — scripts/ (17 FILES; MOST ARE THIN SRC WRAPPERS)
+============================================================
+
+Pattern for wrappers:
+prepend `<repo>/src` to `sys.path`, import the module, call it.
+
+Build these to match the reference set exactly.
+
+Eval:
+- `run_agent_evals.py` -> `eval_harness.main` (SystemExit).
+- `recommend_evals.py` -> `eval_harness.recommend_evals_cli`, with an
+  ImportError guard that tells the developer to rebase if the harness
+  predates their branch.
+
+Benchmark readiness / samples:
+- `audit_benchmark_datasets.py` -> `benchmark_readiness.main`.
+- `inspect_benchmark_dataset.py` -> argparse `--id [--json]`; prints one
+  dataset's readiness audit entry (`benchmark_readiness.audit_benchmark_datasets`);
+  offline, no GCS.
+- `prepare_benchmark_samples.py` -> load sample manifests + validate each
+  against `schemas/benchmark_samples.schema.json`.
+
+
+============================================================
+SEED / FIXTURE GENERATION
+============================================================
+
+Run with `/opt/conda/bin/python`; outputs are committed.
+
+- `generate_synthetic_benchmarks.py` ->
+  argparse `--config <json> --output <csv>`;
+  builds `SyntheticDatasetConfig` from JSON and writes deterministic CSV.
+
+- `generate_dataset_seeds.py` ->
+  config-driven full seed set for a dataset (`--dataset`):
+  smoke CSV + seeds `after_profiling` / `after_planning` /
+  `after_training` / `evaluated`, by really preprocessing + training a
+  LightGBM baseline; uses `eval_seed_roles` to keep roles golden.
+  Heavy; needs pandas/lightgbm/sklearn/joblib.
+
+- `generate_seed_profiles.py` ->
+  telco: schema-valid `dataset_profile` + `column_profile` seeds.
+
+- `generate_training_seed.py` ->
+  telco: real after-training seed (LightGBM, preprocessed parquet,
+  `model.joblib`, trial_files/).
+
+- `generate_answer_bank.py` ->
+  `--dataset [--print]`; reformats `datasets.json` + seeded
+  `prediction_contract.json` into scenario `answer_bank`:
+  `[{match, answer}]`.
+
+
+============================================================
+RELEASE / DISTRIBUTION
+(PayPal/Artifactory specific — stub + ASK ME)
+============================================================
+
+- `inspect_tool_distribution.py` ->
+  inspect a built wheel for uv-tool release readiness
+  (`REQUIRED_WHEEL_MEMBERS` present, `RELEASE_BLOCKING` /
+  `PACKAGE_UPDATE` anti-patterns absent).
+
+- `check_tool_distribution.sh` ->
+  build wheel + inspect + optional `uv tool` smoke
+  (`--index/--out-dir/--no-smoke/--smoke-extras/--release-ready`).
+
+- `prepare_release.py` ->
+  bump `[project]` version in `pyproject.toml` (semver + pre/post/dev);
+  dry-run aware.
+
+- `publish_artifactory.sh` ->
+  build + release-ready check + twine upload to Artifactory
+  (CI vs `~/.pypirc` credential modes; `--dry-run/--skip-build/...`).
+
+- `update_feedback_credits.py` ->
+  `community_credit.make_ledger` / summary from GitHub feedback issues
+  (gh API); writes the community ledger + summary.
+
+Trials:
+- `summarize_trials.py` -> `trial_summary.main`
+  (one-row-per-trial table).
+
+
+============================================================
+PILLAR 8 — CONTRIBUTOR SKILLS
+(.repo/skills/ — maintainer-facing, NOT modeler runtime)
+============================================================
+
+Keep these OUT of `.claude/skills/SKILLS.md` (that index is modeler runtime).
+
+Author `.repo/skills/SKILLS.md` (contributor index) + one directory per skill
+with YAML frontmatter (`name`, `description`):
+
+- `contribute-capability` — adding/changing capabilities, workflow stages,
+  artifact contracts, runtime skills, library wrappers, optional branches,
+  or validator gates while preserving planning-first, artifact-driven
+  behavior.
+  Reference: `references/capability-principles.md`.
+
+- `eval-authoring` — add/extend the harness: a scenario, scorer/invariant,
+  tier, or benchmark dataset — invoked when a change makes
+  `make eval-recommend` print MUST/CHECK.
+  Carries the judgment (what we test, deterministic vs agent, which tier);
+  mechanics live in `docs/evaluationharness.md`.
+
+- `eval-recommend` — turn “which eval tier for PR N?” into the full chain:
+  resolve GitHub host, fetch branch, run recommender on the three-dot diff,
+  summarize tiers + MUST/CHECK.
+  Recommend-only; never runs a paid tier.
+
+- `release-aaml` — cut/tag/publish the uv tool to Artifactory via the release
+  bash scripts, release-PR polling, RMR image PR, Slack announcement.
+  References `01..05-*.md` + `scripts/validate_slack_announcement.py`.
+
+`AGENTS.md` (repo root) should point contributors at `.repo/skills/SKILLS.md`
++ `contribute-capability` before changing capabilities, and at
+`eval-authoring` + `make eval-recommend` after any agent-visible change
+(add coverage in the same PR).
+
+
+============================================================
+PILLAR 4 / TESTS — PYTEST SUITE
+============================================================
+
+Cover:
+- every schema validates a good payload and rejects a bad one;
+- gate ordering (`save-artifact` rejects when upstream gate missing);
+- `begin-skill` redirects correctly;
+- `next-step` walks the chain and reports `canonical_workflow_complete`;
+- trial create/resume/fork;
+- write-guard denies artifact-path writes and allows `work/` writes;
+- Bash auto-allow prefix logic.
+
+Also cover the harness (pillar 6):
+- every eval/benchmark schema validates a good payload and rejects a bad one
+  (`eval_scenario`, `eval_result`, `benchmark_dataset`, `benchmark_samples`);
+- `eval_reports` status buckets + verdict
+  (pass vs incomplete/harness-error fail vs environment-unavailable skip;
+  all-skipped is not a pass);
+- `eval_scorers` invariants
+  (`file_present`, `file_contains` regex, `feedback_credit_marker_parseable`)
+  on a seeded fixture trial;
+- `benchmark_readiness` status classification;
+- `synthetic_benchmarks` determinism (same seed -> same rows);
+- `make eval-deterministic` runs end to end with zero Claude spend.
+
+
+============================================================
+BUILD ORDER (do this, checking in after each)
+============================================================
+
+1. Scaffold repo + `pyproject.toml` + empty package.
+2. Build exact artifact/gate registries and JSON schemas.
+3. Implement validator/state engine + `run_state.json`.
+4. Implement CLI trial lifecycle and Claude launcher.
+5. Add `.claude/` runtime files, hooks, permissions, and skills.
+6. Add canonical ML skills and workflow branches.
+7. Add pytest coverage; make core tests pass.
+8. Add feedback loop.
+9. Add eval/benchmark schemas, deterministic harness, scorers, reports.
+10. Add benchmark datasets, fixtures, seed-generation tools, and readiness.
+11. Add scripts/ wrappers and Makefile.
+12. Add contributor `.repo/skills/`.
+13. Add release/distribution stubs.
+14. Run `make check`; fix failures before moving on.
+15. Check in after each coherent milestone.
+
+============================================================
+END OF ADDITIONAL REBUILD REQUIREMENTS
+============================================================
+
+
+============================================================
+ADDITIONAL CAPTURED BUILD ORDER / ENVIRONMENT NOTES
+============================================================
+
+2. `contracts.py` registries + all schemas + `artifacts.py` validator with
+   `begin-skill` / `save-artifact` / `next-step` / `status` / `validate-write`.
+   Write tests for this layer and make them pass — this is the contract engine,
+   get it right first.
+
+3. `cli.py` — new/resume/status/fork + trial scaffolding + launching Claude.
+
+4. `.claude/CLAUDE.md` + `hooks.json` + `settings.json`.
+
+5. One full skill chain
+   (`prediction-contract -> data-profiling -> workflow-planning ->
+   data-preprocessing -> training -> evaluation`) as `SKILL.md` files.
+
+6. Optional skills (`explainability`, `MDD`, `auto-research`) + feedback loop
+   + overrides.
+
+7. Eval/benchmark harness (pillar 6):
+   `eval_*` + `benchmark_readiness` + `synthetic_benchmarks` +
+   `remediations` + `community_credit` + `trial_summary` modules,
+   the eval/benchmark schemas, `benchmarks/` (`datasets.json` + one dataset
+   + a few scenarios + fixtures/seeds), `Makefile`, `run.py`.
+   Make `make eval-deterministic` and `make check` pass.
+
+8. `scripts/` (pillar 7): the 17 wrappers/generators.
+   Leave the Artifactory/release + GitHub-credit scripts as stubs and
+   ASK ME before wiring hosts/credentials.
+
+9. Contributor skills (pillar 8):
+   `.repo/skills/` + `AGENTS.md` pointers
+   (kept out of the modeler-facing `.claude/skills/SKILLS.md` index).
+
+
+============================================================
+ASK ME BEFORE WIRING THESE
+(environment-specific, don't invent)
+============================================================
+
+- Target compute runtime:
+  this repo assumes an RMR conda image at `/opt/conda/bin/python`;
+  adjust for the actual environment.
+
+- Any internal-library integrations:
+  parity-ml (ONNX preprocessing + fusion + export),
+  Dataproc/Spark, AICG/Ray distributed training,
+  GCS project/bucket conventions, and the GitHub host for the feedback loop.
+  Leave these as documented extension points if not applicable.
+
+- The exact required-field list for each non-contract schema,
+  if the schemas should match a formal specification rather than
+  sensible defaults.
+
+- Release/distribution + community plumbing (pillar 7):
+  the Artifactory simple index + upload URLs and twine credential mode
+  (`publish_artifactory.sh`, `check_tool_distribution.sh`);
+  the GitHub host/org for the feedback-credit rollup
+  (`update_feedback_credits.py`);
+  benchmark dataset download sources + GCS staging paths
+  (`download_datasets.py`, `benchmarks/datasets.json`).
+
+  Stub these and ASK ME — do not invent hosts, buckets, or credentials.
+
+Keep the discipline:
+the Python owns state/validation/gates;
+the agent owns all ML reasoning and code;
+nothing bypasses `save-artifact`.
+
+============================================================
+END OF CAPTURED ENVIRONMENT NOTES
+============================================================
+apps-fileview.texmex_20260924.00_p0
+rebuild_prompt.txt
+Displaying rebuild_prompt.txt. 

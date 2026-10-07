@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "dataset_profile.schema.json",
+  "title": "Dataset profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "dataset_path", "n_rows", "n_columns", "target_column", "target_summary",
+    "split_summary", "missing_value_summary", "duplicate_rows",
+    "data_quality_flags", "profiling_script"
+  ],
+  "properties": {
+    "dataset_path": {"type": "string", "minLength": 1},
+    "n_rows": {"type": "integer", "minimum": 0},
+    "n_columns": {"type": "integer", "minimum": 0},
+    "target_column": {"type": "string", "minLength": 1},
+    "target_summary": {"type": "object", "description": "Class counts / rates, or distribution stats for continuous targets."},
+    "split_summary": {"type": "object", "description": "Row counts (and target rates) per split as defined by the contract."},
+    "missing_value_summary": {"type": "object"},
+    "duplicate_rows": {"type": ["integer", "null"], "minimum": 0},
+    "data_quality_flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "message"],
+        "properties": {
+          "severity": {"enum": ["info", "warning", "critical"]},
+          "message": {"type": "string", "minLength": 1},
+          "columns": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "profiling_script": {"type": "string", "minLength": 1, "description": "Path (relative to trial) of the script that produced this profile."},
+    "segment_summary": {"type": "object"},
+    "generated_at": {"type": "string"},
+    "notes": {"type": "string"}
+  }
+}

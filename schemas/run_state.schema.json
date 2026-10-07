@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "run_state.schema.json",
+  "title": "Run state (single source of truth for a trial)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["trial_id", "created_at", "updated_at", "artifacts", "gates", "sessions", "validation_log"],
+  "properties": {
+    "trial_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string"},
+    "updated_at": {"type": "string"},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "path", "source_skill", "saved_at"],
+        "properties": {
+          "key": {"type": "string"},
+          "path": {"type": "string"},
+          "source_skill": {"type": "string"},
+          "saved_at": {"type": "string"},
+          "version": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "gates": {"type": "object", "additionalProperties": {"type": "boolean"}},
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["started_at"],
+        "properties": {
+          "started_at": {"type": "string"},
+          "mode": {"type": "string"},
+          "claude_session_id": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "validation_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "action", "ok"],
+        "properties": {
+          "at": {"type": "string"},
+          "action": {"type": "string"},
+          "ok": {"type": "boolean"},
+          "key": {"type": ["string", "null"]},
+          "skill": {"type": ["string", "null"]},
+          "errors": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "goal": {"type": ["string", "null"]},
+    "dataset_path": {"type": ["string", "null"]},
+    "pending_slug": {"type": ["string", "null"]},
+    "forked_from": {"type": ["string", "null"]},
+    "package_version": {"type": ["string", "null"]},
+    "last_claude_session_id": {"type": ["string", "null"]},
+    "previous_trial_dirs": {"type": "array", "items": {"type": "string"}},
+    "active_skill": {"type": ["string", "null"]},
+    "developer_focus": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "text"],
+        "properties": {"at": {"type": "string"}, "text": {"type": "string"}}
+      }
+    }
+  }
+}

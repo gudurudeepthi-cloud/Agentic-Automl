@@ -1,0 +1,4 @@
+# The runtime target is Linux (/opt/conda); keep LF so shell scripts and hooks work there.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
