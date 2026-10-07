@@ -30,8 +30,10 @@ business owner.
 - **Trust checks are required.** Each is `{name, passed, detail}`. Include at least:
   - `leakage`: no feature in `column_profile` marked `leakage_suspect` was used,
     and the top-feature importances are plausible;
-  - `too_good_to_be_true`: the metric isn't implausibly high for the domain
-    (e.g. AUC > 0.98 on behavioural data);
+  - `too_good_to_be_true`: the metric isn't implausibly high for the domain.
+    With rare positives (under ~1%), ROC-AUC near 0.99 is normal and tells you
+    little. Judge by PR-AUC relative to the base rate, and by whether a single
+    feature carries most of the importance or nearly separates the classes alone;
   - `cv_vs_test_gap`: the test metric is within a reasonable distance of the CV score;
   - `split_integrity`: test rows and target rate match `dataset_profile.split_summary`;
   - on the parity path, `onnx_parity` (from `onnx_deployment.parity_check`).

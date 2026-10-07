@@ -11,7 +11,7 @@ catch: rare positives, a post-outcome leakage column, a constant column, an ID-l
 high-cardinality column, missing values, duplicate rows, repeated customers, and a
 fraud-rate drift over time.
 
-    python scripts/generate_synthetic_fraud.py --rows 50000 --seed 7 --out-dir data
+    python scripts/generate_synthetic_fraud.py --rows 250000 --fraud-rate 0.002 --seed 7 --out-dir data
 """
 
 from __future__ import annotations
@@ -71,7 +71,8 @@ def make_customers(rng: random.Random, n: int) -> list[dict]:
     return customers
 
 
-def make_row(rng: random.Random, i: int, cust: dict, start: datetime, days: int) -> tuple[dict, float]:
+def make_row(rng: random.Random, i: int, cust: dict, start: datetime, days: int,
+             signal: float) -> tuple[dict, float]:
     t = start + timedelta(seconds=rng.randrange(days * 86400))
     hour = t.hour
     mcc = weighted(rng, MCC)
@@ -101,8 +102,7 @@ def make_row(rng: random.Random, i: int, cust: dict, start: datetime, days: int)
         + (1.5 if cust["risky"] else 0.0)
         - 0.01 * (cust["age"] - 44)
         + 0.6 * ((t - start).days / days)  # drift: fraud gets more common later
-        + rng.gauss(0, 0.6)
-    )
+    ) * signal + rng.gauss(0, 0.6)
     row = {
         "transaction_id": f"T{i:08d}",
         "customer_id": cust["customer_id"],
@@ -137,17 +137,17 @@ def calibrate(logits: list[float], target_rate: float) -> float:
     return (lo + hi) / 2
 
 
-def generate(rows: int, seed: int, fraud_rate: float, days: int) -> list[dict]:
+def generate(rows: int, seed: int, fraud_rate: float, days: int, signal: float = 1.0) -> list[dict]:
     rng = random.Random(seed)
     customers = make_customers(rng, max(50, rows // 12))
     start = datetime(2025, 1, 1)
-    drafts = [make_row(rng, i, rng.choice(customers), start, days) for i in range(rows)]
+    drafts = [make_row(rng, i, rng.choice(customers), start, days, signal) for i in range(rows)]
     shift = calibrate([z for _, z in drafts], fraud_rate)
     out = []
     for row, z in drafts:
         fraud = int(rng.random() < sigmoid(z + shift))
         # Leakage trap: chargebacks are filed AFTER the outcome is known.
-        row["chargeback_flag"] = int(rng.random() < (0.93 if fraud else 0.004))
+        row["chargeback_flag"] = int(rng.random() < (0.93 if fraud else 0.0015))
         row["is_fraud"] = fraud
         # Missingness: distance unknown for some online card-not-present traffic.
         if row["channel"] == "online" and rng.random() < 0.18:
@@ -208,7 +208,7 @@ What a correct pipeline run should notice:
 
 | Trap | Where | Expected behaviour |
 |---|---|---|
-| Rare positives (~{rate:.0%}) | `is_fraud` | `pr_auc` (not accuracy) as primary metric; stratified or temporal split; class-imbalance strategy in plan |
+| Severe class imbalance (~{rate:.2%}, about 1 in {one_in}) | `is_fraud` | `pr_auc` (not accuracy) as primary metric; stratified or temporal split; class-imbalance strategy in plan |
 | **Target leakage** | `chargeback_flag` | Flagged `leakage_suspect` in column_profile (single-feature AUC ~0.96); dropped in plan. If it's kept, evaluation's too-good-to-be-true check should fire |
 | Constant column | `currency` (always USD) | Flagged and dropped |
 | ID columns | `transaction_id`, `customer_id` | Role `id`; not features |
@@ -223,25 +223,31 @@ shows up via `failed_logins_7d` and `txn_count_24h`), merchant category (gift_ca
 digital_goods, electronics), `amount_to_avg_ratio`, new accounts (`account_tenure_days` < 60),
 `is_foreign`, night hours (`hour_of_day` <= 4), online channel.
 
-Reference numbers (seed 7, 50k rows, de-duplicated, last 20% of time as test, untuned
-HistGradientBoosting): without `chargeback_flag` ROC-AUC ~0.87, PR-AUC ~0.23. With
-`chargeback_flag` left in: ROC-AUC ~0.99, PR-AUC ~0.93. A run that lands near the second
-line has leaked. Reasonable tuned results sit around ROC-AUC 0.86-0.90, PR-AUC 0.20-0.35.
+Reference numbers (defaults: seed 7, 250k rows, 0.2% fraud, signal 2.0; de-duplicated,
+last 20% of time as test, HistGradientBoosting with no early stopping):
+  without `chargeback_flag`: ROC-AUC ~0.99, PR-AUC ~0.47
+  with `chargeback_flag`:    ROC-AUC ~1.00, PR-AUC ~0.96
+At 0.2% prevalence ROC-AUC is uninformative. Compare PR-AUC (base rate 0.002). PR-AUC
+far above ~0.6 on this data means `chargeback_flag` leaked in. Reasonable results sit at
+PR-AUC 0.35-0.55. The test split holds only ~100 frauds, so expect +/-0.05 noise.
+Early stopping on a random validation slice is unstable with so few positives.
 """
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--rows", type=int, default=50_000)
+    parser.add_argument("--rows", type=int, default=250_000)
     parser.add_argument("--seed", type=int, default=7)
-    parser.add_argument("--fraud-rate", type=float, default=0.02)
+    parser.add_argument("--fraud-rate", type=float, default=0.002, help="Real-world card fraud is ~0.1-0.5%%")
     parser.add_argument("--days", type=int, default=180)
+    parser.add_argument("--signal", type=float, default=2.0,
+                        help="Multiplier on the true fraud drivers; higher = more separable")
     parser.add_argument("--out-dir", type=Path, default=Path("data"))
     parser.add_argument("--split", action="store_true",
                         help="Write train.csv/test.csv (last 20%% of time as test) instead of one file")
     args = parser.parse_args(argv)
 
-    rows = generate(args.rows, args.seed, args.fraud_rate, args.days)
+    rows = generate(args.rows, args.seed, args.fraud_rate, args.days, args.signal)
     dataset_dir = args.out_dir / "synthetic_fraud"
     dataset_dir.mkdir(parents=True, exist_ok=True)
     if args.split:
@@ -253,7 +259,7 @@ def main(argv: list[str] | None = None) -> int:
     (dataset_dir / "data_dictionary.md").write_text(DICTIONARY, encoding="utf-8")
     pos = sum(r["is_fraud"] for r in rows)
     (args.out_dir / "synthetic_fraud_ANSWER_KEY.md").write_text(ANSWER_KEY.format(
-        seed=args.seed, rows=args.rows, rate=args.fraud_rate, days=args.days,
+        seed=args.seed, rows=args.rows, rate=args.fraud_rate, days=args.days, one_in=round(1 / args.fraud_rate),
         n=len(rows), pos=pos, actual=pos / len(rows)), encoding="utf-8")
     print(f"Wrote {len(rows)} rows ({pos} fraud, {pos / len(rows):.2%}) to {dataset_dir}")
     print(f"Answer key: {args.out_dir / 'synthetic_fraud_ANSWER_KEY.md'} (keep it away from the agent)")
