@@ -48,7 +48,10 @@ agentic-automl artifacts save-artifact training_summary --payload work/training_
    saves the model, and appends its result to the summary draft.
 2. Run a quick single-fold smoke run, report the timing estimate, then run the
    full CV.
-3. **Feature selection** (on CV, never on test). Drop near-duplicates first
+3. **Feature selection** (on CV, never on test), as **its own script**,
+   `work/feature_selection.py`, that the training script reads, so it can be
+   found, re-run and audited separately. Put shared CV/model code in a module
+   (e.g. `work/modeling.py`) so both scripts use the same folds. Drop near-duplicates first
    (|Spearman| > 0.95: keep the more interpretable one), then compute
    permutation importance of each raw feature on every validation fold.
    Remove features whose mean importance is ≤ 0, re-score, and keep the
