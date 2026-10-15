@@ -8,3 +8,4 @@ dist/
 build/
 .claude/settings.local.json
 data/
+results/
