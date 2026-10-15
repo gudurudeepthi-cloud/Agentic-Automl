@@ -385,13 +385,12 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_pick(argv: list[str]) -> int:
-    """Bare `agentic-automl`: pick a recent trial and resume it."""
+    """Bare `agentic-automl`: pick a recent trial and resume it, or start one if there are none."""
     from agentic_automl.trial_summary import collect_trial
 
     trials = st.recent_trials(15)
     if not trials:
-        print("No trials yet. Start one with: agentic-automl new [--dataset PATH] [--goal \"...\"]")
-        return 0
+        return main(["new", *argv])
     for i, trial in enumerate(trials, 1):
         row = collect_trial(trial)
         print(f"{i:>2}. {trial.name:<34} {str(row.get('goal') or '')[:36]:<36} next: {row.get('next_skill')}")

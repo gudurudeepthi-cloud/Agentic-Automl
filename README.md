@@ -8,6 +8,7 @@ validator owns state, schema validation and step ordering.
 ## Install
 
 ```bash
+uv tool install --editable .     # global `agentic-automl` command, tracks this checkout
 pip install -e ".[dev]"          # launcher + tests (only runtime dep: jsonschema)
 pip install -e ".[phase1]"       # modeling stack, for the trial runtime only
 ```
