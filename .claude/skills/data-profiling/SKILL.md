@@ -57,6 +57,10 @@ agentic-automl artifacts save-artifact column_profile --payload work/column_prof
 4. Run cheap leakage probes on each feature: single-feature AUC (or
    correlation) with the target on train. Flag anything suspiciously
    predictive (e.g. AUC > 0.95) as `leakage_suspect` with a `critical` flag.
+   **Encode categoricals out-of-fold** (smoothed target rate from the other
+   folds). An in-sample target rate memorises the labels of high-cardinality
+   columns and produces false leakage flags (e.g. AUC 0.96 instead of the
+   true 0.50 for a 4,000-level ID).
 5. Flag `warning`/`critical` issues: target imbalance below 1%, test-split
    target rate far from train, constant columns, ID-like columns, heavy
    missingness (over 50%), unparseable dates.

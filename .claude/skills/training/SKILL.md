@@ -48,12 +48,18 @@ agentic-automl artifacts save-artifact training_summary --payload work/training_
    saves the model, and appends its result to the summary draft.
 2. Run a quick single-fold smoke run, report the timing estimate, then run the
    full CV.
-3. Select the model by mean CV primary metric. Prefer the simpler model when
+3. **Feature selection** (on CV, never on test). Drop near-duplicates first
+   (|Spearman| > 0.95: keep the more interpretable one), then compute
+   permutation importance of each raw feature on every validation fold.
+   Remove features whose mean importance is ≤ 0, re-score, and keep the
+   reduced set only if it is within 1 std of the full set. Save the evidence
+   to `outputs/model/feature_selection.json`.
+4. Select the model by mean CV primary metric. Prefer the simpler model when
    scores overlap within a standard deviation, and say so in `selection_rationale`.
-4. Summary fields: `models[]` (`name`, `library`, `hyperparameters`,
+5. Summary fields: `models[]` (`name`, `library`, `hyperparameters`,
    `cv_score`, plus optional `cv_score_std`, `train_time_seconds`,
    `artifact_path`), `selected_model`, `selection_rationale`,
    `primary_metric`, `cv_strategy`, `training_script`,
    `model_artifact_path`, `random_seed`.
-5. Persist, then follow `next-step` (it may route to `auto-research` or
+6. Persist, then follow `next-step` (it may route to `auto-research` or
    `parity-ml-export` before `evaluation`).

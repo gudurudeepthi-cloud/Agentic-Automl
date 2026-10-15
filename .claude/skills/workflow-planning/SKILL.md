@@ -50,10 +50,51 @@ agentic-automl artifacts begin-skill workflow-planning
 agentic-automl artifacts save-artifact workflow_plan --payload work/workflow_plan.json --source-skill workflow-planning
 ```
 
+## Data-driven model-family recommendation
+Unless the contract fixes the family (`user_specified`), recommend it from
+evidence, not habit. Write `work/model_family_screen.py`, which uses **train
+only** with the same CV scheme the plan will use (time-ordered folds for temporal
+contracts):
+1. **Characterise the data**: rows, features, share categorical, max
+   cardinality, missingness, positive rate, and how many features carry
+   univariate signal.
+2. **Screen 3–4 families** with quick, sensible defaults, each with the
+   preprocessing it needs: a regularised linear model (scaled numerics, log
+   transforms, one-hot), a bagged-tree ensemble (random forest / extra trees),
+   and gradient boosting (LightGBM/HistGB). Add others only if the data
+   suggests them (e.g. text → linear on TF-IDF; very small n → linear/kNN).
+3. **Rank by mean CV primary metric**, and read the gaps **paired per fold**
+   (same folds for every family: compare the per-fold differences and their
+   std, not overlapping error bars):
+   - boosting ≫ linear → non-linear effects/interactions → recommend GBDT;
+   - paired gap to linear ≤ its std → prefer linear (simpler, interpretable,
+     calibrated), and keep the best family as a contender for training to confirm;
+   - bagging ≈ boosting with lower variance → bagging is a robust alternative.
+   Factor in the contract (`production_parity` → ONNX-exportable families;
+   interpretability needs from the domain overlay).
+4. Save the evidence to `work/model_family_advice.json`. Put the recommended
+   family first in `candidate_models`, plus the linear model as a reference
+   baseline (useful even under `single_baseline`). State the gaps in the rationale.
+
+## Feature engineering
+Propose features from the profile and the domain, then screen them before
+committing them to the plan:
+- **Point-in-time only.** Per-entity history features (time since previous event,
+  amount vs the entity's past mean, first-time merchant/country) must use
+  strictly earlier rows (sorted by time, `shift`/expanding windows). Never use
+  future rows, and never use statistics computed on the full table.
+- Prefer ratios, deltas, novelty flags and cyclical/time encodings over raw
+  identifiers. A high-cardinality ID with no signal can still be useful as a
+  **novelty** feature ("first time this customer used this merchant").
+- Screen each engineered feature with the out-of-fold univariate probe and
+  include it in the family screen. Keep the decision to retain features for
+  training-time selection.
+
 ## Steps
 1. Read the contract and both profiles. List the decisions the data forces:
    leakage suspects to drop, high-cardinality categoricals, imbalance
-   handling, time-awareness.
+   handling, time-awareness. Run the feature-engineering screen and the
+   model-family screen above.
 2. Draft the plan:
    - `objective`: one sentence.
    - `modeling_plan`: `candidate_models[]` (`name`, `library`, `rationale`,
