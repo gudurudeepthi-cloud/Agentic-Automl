@@ -9,5 +9,8 @@ each trial workspace live in `.claude/CLAUDE.md`.
 - `schemas/`: one draft-07 schema per artifact, plus `run_state.schema.json`. Adding an artifact means: registry entry, gate, requirements, schema, `SKILL_PRODUCES` entry, a `SKILL.md`, and test fixtures in `tests/conftest.py`.
 - `.claude/` is the runtime template copied into every trial. `.claude/hooks.json` holds the PreToolUse guards. Claude Code doesn't read that file itself; the launcher merges it into each trial's `settings.json`, which keeps the guards out of sessions in this repo.
 - `ml_domain` enums in the contract/plan schemas must match `.claude/skills/domains/registry.json` (a test enforces this).
-- The Python never trains models. ML logic belongs in `.claude/skills/*/SKILL.md`.
+- The Python never trains models. ML logic belongs in `.claude/skills/*/SKILL.md`
+  and in the step templates in `.claude/scripts/`, which the agent copies into a trial's
+  `work/`. The templates run under the trial runtime Python, not the launcher;
+  `tests/test_step_templates.py` runs them end to end when sklearn is available.
 - Run `pytest` before committing.

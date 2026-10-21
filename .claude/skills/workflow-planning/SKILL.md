@@ -52,9 +52,11 @@ agentic-automl artifacts save-artifact workflow_plan --payload work/workflow_pla
 
 ## Data-driven model-family recommendation
 Unless the contract fixes the family (`user_specified`), recommend it from
-evidence, not habit. Write `work/model_family_screen.py`, which uses **train
-only** with the same CV scheme the plan will use (time-ordered folds for temporal
-contracts):
+evidence, not habit. Start from the template:
+`cp .claude/scripts/aaml_common.py .claude/scripts/model_family_screen.py work/`.
+It uses **train only**, with the same encoder and CV folds training will use
+(time-ordered folds for temporal contracts, group folds when the entity repeats),
+so the screen and training agree. Pass the planned drops with `--drop`:
 1. **Characterise the data**: rows, features, share categorical, max
    cardinality, missingness, positive rate, and how many features carry
    univariate signal.
@@ -78,7 +80,11 @@ contracts):
 
 ## Feature engineering
 Propose features from the profile and the domain, then screen them before
-committing them to the plan:
+committing them to the plan. Write them in `work/features.py`, starting from
+`cp .claude/scripts/features_template.py work/features.py`. Its point-in-time
+helpers cover prior counts, time since previous, ratio to history, rolling counts,
+novelty flags and cyclical encodings. `aaml_common.split()` applies it before the
+split in every later step, and `ENGINEERED` must equal the plan's `engineered_features`:
 - **Point-in-time only.** Per-entity history features (time since previous event,
   amount vs the entity's past mean, first-time merchant/country) must use
   strictly earlier rows (sorted by time, `shift`/expanding windows). Never use

@@ -41,7 +41,14 @@ agentic-automl artifacts save-artifact preprocessing_summary --payload work/prep
 ```
 
 ## Steps
-1. Write `work/preprocess.py`. It should:
+1. Start from the template:
+   `cp .claude/scripts/aaml_common.py .claude/scripts/preprocess.py work/`
+   (plus `work/features.py` from planning, if the plan has engineered features).
+   It already does the steps below. It fails if a leakage suspect isn't dropped,
+   if a high-cardinality categorical would be one-hot encoded, or if row counts
+   differ from the profile. It also records the raw-feature → encoded-column map
+   that feature selection needs. Adapt it to the plan's encoding/imputation
+   choices. `work/preprocess.py` should:
    1. load the segments and apply the contract split;
    2. drop `preprocessing_plan.drop_columns`;
    3. build the `ColumnTransformer` from the plan (imputation, encoding, scaling);

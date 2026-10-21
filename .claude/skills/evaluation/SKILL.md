@@ -53,7 +53,14 @@ agentic-automl artifacts save-artifact evaluation_summary --payload work/evaluat
 ```
 
 ## Steps
-1. Write `work/evaluate.py`. It loads test and the model, predicts, computes
+1. Start from the template:
+   `cp .claude/scripts/aaml_common.py .claude/scripts/evaluate.py work/`.
+   It refuses to run once `evaluation_summary` exists, unless you pass
+   `--rerun-reason`, which is recorded. It picks any threshold on the CV
+   predictions (`--threshold-rule f1|top:<frac>`) and computes a bootstrap CI for
+   the primary metric, which the `cv_vs_test_gap` tolerance uses. Never paste in
+   noise or "leaked model" figures from elsewhere. Rewrite its draft `narrative`
+   for the business owner. `work/evaluate.py` loads test and the model, predicts, computes
    `primary_metric` and every `report_metric`, the trivial baseline,
    per-segment metrics (by `data_segments` roles or a business segment column
    if the user named one), and plots (ROC/PR or residuals, calibration,

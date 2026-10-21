@@ -43,22 +43,30 @@ agentic-automl artifacts save-artifact training_summary --payload work/training_
 ```
 
 ## Steps
-1. Write `work/train_<model>.py` (one per candidate, or one parameterised
-   script). It loads train, runs CV, logs fold scores, refits on full train,
-   saves the model, and appends its result to the summary draft.
-2. Run a quick single-fold smoke run, report the timing estimate, then run the
-   full CV.
-3. **Feature selection** (on CV, never on test), as **its own script**,
-   `work/feature_selection.py`, that the training script reads, so it can be
-   found, re-run and audited separately. Put shared CV/model code in a module
-   (e.g. `work/modeling.py`) so both scripts use the same folds. Drop near-duplicates first
-   (|Spearman| > 0.95: keep the more interpretable one), then compute
-   permutation importance of each raw feature on every validation fold.
-   Remove features whose mean importance is ≤ 0, re-score, and keep the
-   reduced set only if it is within 1 std of the full set. Save the evidence
-   to `outputs/model/feature_selection.json`.
-4. Select the model by mean CV primary metric. Prefer the simpler model when
-   scores overlap within a standard deviation, and say so in `selection_rationale`.
+1. Start from the templates:
+   `cp .claude/scripts/aaml_common.py .claude/scripts/feature_selection.py .claude/scripts/train.py work/`.
+   Shared CV/model code lives in `aaml_common.py`, so both scripts use the same
+   folds (time-series for temporal contracts, group folds when
+   `entity_id_column` repeats). Adapt them to the plan: families, search
+   spaces, imbalance handling.
+2. **Smoke run first:** `work/feature_selection.py --smoke` fits one fold per
+   family and prints a runtime estimate. Report it, and confirm before heavy
+   compute. Run the full job in the background if it takes more than a few minutes.
+3. **Feature selection** (on CV, never on test) runs as **its own script**,
+   `work/feature_selection.py`, which `train.py` reads, so it can be found,
+   re-run and audited separately. It records the plan's drops, removes
+   near-duplicates (|Spearman| > 0.95: keep the original over an engineered
+   transform), and tunes list-valued `search_space` entries. It then computes
+   permutation importance of each raw feature on every validation fold, drops
+   features with mean importance ≤ 0 (`--rule stable` is stricter), re-scores,
+   and keeps the reduced set only if it is within 1 std of the full set. The
+   evidence goes to `outputs/model/feature_selection.json`.
+4. `work/train.py` selects the family with a paired per-fold comparison,
+   simplest first: a more complex family must beat the incumbent by more than
+   the std of the per-fold gap. It refits every candidate on full train and
+   saves the winner's CV predictions (for threshold choice in evaluation).
+   Use the same `--folds` for both scripts. Put the paired gaps in
+   `selection_rationale`.
 5. Summary fields: `models[]` (`name`, `library`, `hyperparameters`,
    `cv_score`, plus optional `cv_score_std`, `train_time_seconds`,
    `artifact_path`), `selected_model`, `selection_rationale`,

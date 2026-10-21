@@ -42,8 +42,14 @@ agentic-automl artifacts save-artifact column_profile --payload work/column_prof
 ```
 
 ## Steps
-1. Write `work/profile_dataset.py`. It loads every segment, applies the
-   contract split, and writes both JSON drafts. Run it with the runtime Python.
+1. Start from the template, not a blank file:
+   `cp .claude/scripts/aaml_common.py .claude/scripts/profile_dataset.py work/`
+   (see `.claude/scripts/README.md`). It loads every segment, applies the
+   contract split (`aaml_common.split`, the same one preprocessing uses), runs
+   the out-of-fold leakage probe, and writes both JSON drafts. Adapt it to the
+   data, then run it with the runtime Python. It writes only computed facts.
+   If you explain one (e.g. "missing only for online transactions"), check it
+   first; `stats.missing_pattern` is the evidence. Then add it as a column `notes`.
 2. `dataset_profile` fields: `dataset_path`, `n_rows`, `n_columns`,
    `target_column`, `target_summary` (class counts and rates, or
    mean/std/quantiles), `split_summary` (rows and target rate per split),

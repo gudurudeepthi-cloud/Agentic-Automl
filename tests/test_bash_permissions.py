@@ -32,6 +32,13 @@ from test_cli import write_transcript
         ("agentic-automl artifactsX status", False),
         ("", False),
         ("mkdir -p 'unterminated", False),
+        ("cp .claude/scripts/aaml_common.py .claude/scripts/train.py work/", True),
+        ("cp ./.claude/scripts/features_template.py work/features.py", True),
+        ("cp .claude/scripts/train.py /tmp/", False),
+        ("cp .claude/scripts/../settings.json work/", False),
+        ("cp prediction_contract.json work/", False),
+        ("cp -r .claude/scripts work/", False),
+        ("cp .claude/scripts/train.py work/../state/", False),
     ],
 )
 def test_auto_allow(command, allowed):

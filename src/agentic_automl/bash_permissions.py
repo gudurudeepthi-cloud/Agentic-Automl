@@ -33,6 +33,16 @@ def safe_prefixes() -> list[list[str]]:
     return prefixes
 
 
+def _is_template_copy(tokens: list[str]) -> bool:
+    """`cp .claude/scripts/<file>... work/[<name>]`: copying step templates into the lab notebook."""
+    if len(tokens) < 3 or tokens[0] != "cp":
+        return False
+    *sources, dest = tokens[1:]
+    clean = lambda p: ".." not in p.split("/") and not p.startswith(("/", "~", "-"))  # noqa: E731
+    return (all(clean(s) and s.removeprefix("./").startswith(".claude/scripts/") for s in sources)
+            and clean(dest) and dest.removeprefix("./").split("/")[0] == "work")
+
+
 def is_auto_allowed(command: str) -> bool:
     command = command.strip()
     if not command or _UNSAFE.search(command):
@@ -41,6 +51,8 @@ def is_auto_allowed(command: str) -> bool:
         tokens = shlex.split(command)
     except ValueError:
         return False
+    if _is_template_copy(tokens):
+        return True
     # Require an argument after every prefix: a bare interpreter would open a REPL.
     return any(tokens[: len(p)] == p and len(tokens) > len(p) for p in safe_prefixes())
 
