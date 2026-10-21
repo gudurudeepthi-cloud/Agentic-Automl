@@ -195,6 +195,20 @@ def claude_template_dir() -> Path:
     raise FileNotFoundError("Cannot locate .claude template directory")
 
 
+def step_templates_dir() -> Path:
+    """Step-template scripts (repo `scripts/`), copied into each trial as `.claude/scripts/`.
+
+    `scripts/dev/` (contributor tools such as the synthetic-data generator) is never copied.
+    """
+    bundled = PACKAGE_DIR / "_data" / "scripts"
+    if bundled.is_dir():
+        return bundled
+    root = source_root()
+    if root is not None:
+        return root / "scripts"
+    raise FileNotFoundError("Cannot locate scripts directory")
+
+
 def storage_dir() -> Path:
     """Root for trials/ and results/, kept outside the code repo.
 

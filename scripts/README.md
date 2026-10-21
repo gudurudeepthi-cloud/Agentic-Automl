@@ -12,6 +12,10 @@ cp .claude/scripts/<step>.py work/
 
 Run scripts from the trial root. `aaml_common.py` must sit next to them in `work/`.
 
+In the repo these live in `scripts/`. The launcher copies them into every trial
+as `.claude/scripts/` on new and resume. `scripts/dev/` holds contributor tools,
+such as the synthetic-data generator, and is never copied into a trial.
+
 | Skill | Template | Reads | Writes |
 |---|---|---|---|
 | data-profiling | `profile_dataset.py` | contract, data | `work/dataset_profile.json`, `work/column_profile.json` |

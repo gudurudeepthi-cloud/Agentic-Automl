@@ -1,5 +1,6 @@
-"""Step templates in .claude/scripts/: present, compiled, referenced by their skills, shipped into trials,
-and (when a runtime Python with the modeling stack is available) runnable end to end."""
+"""Step templates (repo scripts/, shipped into trials as .claude/scripts/): present, compiled, referenced by
+their skills, copied into trials without scripts/dev, and (when a runtime Python with the modeling stack is
+available) runnable end to end."""
 import json
 import py_compile
 import random
@@ -13,9 +14,9 @@ import pytest
 
 from agentic_automl import cli
 from agentic_automl import state as st
-from agentic_automl.contracts import claude_template_dir, schema_path
+from agentic_automl.contracts import claude_template_dir, schema_path, step_templates_dir
 
-SCRIPTS = claude_template_dir() / "scripts"
+SCRIPTS = step_templates_dir()
 SKILLS = claude_template_dir() / "skills"
 TEMPLATES = {
     "profile_dataset.py": "data-profiling",
@@ -46,6 +47,8 @@ def test_templates_ship_into_new_trials(capsys):
     trial = Path(json.loads(capsys.readouterr().out)["trial_dir"])
     for name in [*TEMPLATES, "aaml_common.py", "README.md"]:
         assert (trial / ".claude" / "scripts" / name).is_file(), name
+    # contributor tools (the data generator knows the answer key) must never reach a trial
+    assert not (trial / ".claude" / "scripts" / "dev").exists()
 
 
 # --------------------------------------------------------------------------- end to end
