@@ -36,7 +36,7 @@ from jsonschema import Draft7Validator
 from agentic_automl import artifacts
 from agentic_automl.benchmark_readiness import benchmarks_dir, repo_root
 from agentic_automl.contracts import schemas_dir
-from agentic_automl.eval_reports import render_results_markdown, verdict
+from agentic_automl.eval_reports import render_results_markdown, render_results_tsv, verdict
 from agentic_automl.eval_scorers import artifact_snapshot, score_trial
 
 TIERS = ("deterministic", "auth", "component", "e2e", "real")
@@ -292,6 +292,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--tier", choices=TIERS, default="deterministic")
     ap.add_argument("--output-dir", type=Path, default=Path(os.environ.get("TEMP", "/tmp")) / "agentic-automl-evals")
     ap.add_argument("--report-md", type=Path, default=None)
+    ap.add_argument("--results-tsv", type=Path, default=None,
+                    help="also write one row per scenario (status, test/CV scores, model) as TSV")
     ap.add_argument("--dataset", default=None, help="only scenarios for this dataset_id")
     ap.add_argument("--scenario", default=None, help="only scenario ids matching this glob")
     ap.add_argument("--trust-runtime", action="store_true", help="required for paid tiers (headless agent runs)")
@@ -331,6 +333,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.report_md:
         args.report_md.parent.mkdir(parents=True, exist_ok=True)
         args.report_md.write_text(md, encoding="utf-8")
+    if args.results_tsv:
+        args.results_tsv.parent.mkdir(parents=True, exist_ok=True)
+        args.results_tsv.write_text(render_results_tsv(results), encoding="utf-8", newline="\n")
+        print(f"TSV: {args.results_tsv}")
     ok, why = verdict(results)
     print(f"\n{'PASS' if ok else 'FAIL'}: {why}. Results: {ctx.output_dir / 'results'}")
     return 0 if ok else 1

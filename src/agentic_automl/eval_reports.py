@@ -47,6 +47,50 @@ def render_summary(results: list[dict]) -> str:
             f"passed {s['passed']}, failed {s['failed']}, skipped {s['skipped']}.")
 
 
+TSV_COLUMNS = ["run_id", "scenario_id", "dataset_id", "tier", "status", "primary_metric", "test_value",
+               "cv_score", "cv_score_std", "selected_model", "trust_checks_failed", "failed_scores", "cost_usd",
+               "elapsed_seconds", "trial_dir"]
+
+
+def _model_metrics(trial_dir: str | None) -> dict:
+    """Headline numbers from the scored trial's artifacts (blank when a stage didn't run)."""
+    import json
+    from pathlib import Path
+
+    out = {}
+    if not trial_dir:
+        return out
+    t = Path(trial_dir)
+    ev, tr = t / "outputs/report/evaluation_summary.json", t / "outputs/model/training_summary.json"
+    if ev.is_file():
+        e = json.loads(ev.read_text(encoding="utf-8"))
+        out.update(primary_metric=e.get("primary_metric"), test_value=e.get("primary_metric_value"),
+                   trust_checks_failed=",".join(c["name"] for c in e.get("trust_checks", []) if not c["passed"]))
+    if tr.is_file():
+        s = json.loads(tr.read_text(encoding="utf-8"))
+        m = next((m for m in s.get("models", []) if m["name"] == s.get("selected_model")), {})
+        out.update(selected_model=s.get("selected_model"), cv_score=m.get("cv_score"), cv_score_std=m.get("cv_score_std"))
+        out.setdefault("primary_metric", s.get("primary_metric"))
+    return out
+
+
+def render_results_tsv(results: list[dict]) -> str:
+    def cell(v):
+        if v is None:
+            return ""
+        if isinstance(v, float):
+            return f"{v:.4f}"
+        return str(v).replace("\t", " ").replace("\n", " ")
+
+    rows = ["\t".join(TSV_COLUMNS)]
+    for r in results:
+        row = {**r, **_model_metrics(r.get("trial_dir")),
+               "failed_scores": ",".join(x["name"] for x in r["scores"] if not x["passed"]),
+               "cost_usd": (r.get("cost") or {}).get("usd")}
+        rows.append("\t".join(cell(row.get(c)) for c in TSV_COLUMNS))
+    return "\n".join(rows) + "\n"
+
+
 def render_results_markdown(results: list[dict], title: str = "Agent eval report") -> str:
     parts = [f"# {title}", "", render_summary(results), "", render_results_table(results), ""]
     for r in results:

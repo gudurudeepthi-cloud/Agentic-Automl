@@ -69,11 +69,16 @@ def test_committed_scenarios_validate_and_reference_real_seeds():
 
 
 def test_deterministic_tier_passes_on_committed_seeds(tmp_path):
-    code = eh.main(["--tier", "deterministic", "--output-dir", str(tmp_path), "--report-md", str(tmp_path / "r.md")])
+    code = eh.main(["--tier", "deterministic", "--output-dir", str(tmp_path), "--report-md", str(tmp_path / "r.md"),
+                    "--results-tsv", str(tmp_path / "r.tsv")])
     results = [json.loads(p.read_text()) for p in (tmp_path / "results").glob("*.json")]
     assert code == 0, [(r["scenario_id"], r["status"], r["stop_reason"]) for r in results]
     assert results and all(r["status"] == "pass" for r in results)
     assert "Verdict: PASS" in (tmp_path / "r.md").read_text()
+    header, *rows = (tmp_path / "r.tsv").read_text().splitlines()
+    assert header.split("\t") == er.TSV_COLUMNS and len(rows) == len(results)
+    row = dict(zip(er.TSV_COLUMNS, rows[0].split("\t")))
+    assert row["status"] == "pass" and float(row["test_value"]) > 0 and row["selected_model"]
 
 
 def test_paid_tier_needs_trust_runtime(tmp_path):

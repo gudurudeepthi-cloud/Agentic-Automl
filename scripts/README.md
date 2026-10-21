@@ -44,7 +44,7 @@ python scripts/audit_benchmark_datasets.py
 
 # before a PR
 python scripts/recommend_evals.py --base origin/main --head HEAD
-python scripts/run_agent_evals.py --tier deterministic --report-md eval-report.md
+python scripts/run_agent_evals.py --tier deterministic --report-md eval-report.md --results-tsv results/evals/smoke.tsv
 
 # release
 python scripts/prepare_release.py patch
