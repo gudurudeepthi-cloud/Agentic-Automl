@@ -20,9 +20,10 @@
     "Contract",
     "PaperlessBilling",
     "PaymentMethod",
-    "MonthlyCharges"
+    "MonthlyCharges",
+    "TotalCharges"
   ],
-  "output_feature_count": 44,
+  "output_feature_count": 46,
   "transformations": [
     {
       "step": "dedupe",
@@ -35,14 +36,15 @@
     {
       "step": "drop",
       "columns": [
-        "customerID",
-        "TotalCharges"
+        "customerID"
       ],
       "description": "Plan drop_columns (ids, time, constants, leakage, ...)"
     },
     {
       "step": "impute",
-      "columns": [],
+      "columns": [
+        "TotalCharges"
+      ],
       "description": "Median + missing indicators, fit on train"
     },
     {
@@ -68,8 +70,7 @@
     }
   ],
   "dropped_columns": [
-    "customerID",
-    "TotalCharges"
+    "customerID"
   ],
   "train_rows": 2400,
   "test_rows": 600,

@@ -34,7 +34,7 @@ def test_hooks_json_wires_guards():
     pre = load("hooks.json")["hooks"]["PreToolUse"]
     by_matcher = {e["matcher"]: e["hooks"][0]["command"] for e in pre}
     assert by_matcher["Write|Edit|MultiEdit|NotebookEdit"] == \
-        'agentic-automl artifacts validate-write --trial "${TRIAL_DIR:-.}"'
+        "agentic-automl artifacts validate-write"
     assert by_matcher["Bash|PowerShell"] == "agentic-automl bash-permissions check"
     [capture] = load("hooks.json")["hooks"]["PostToolUseFailure"]
     assert capture["matcher"] == "Bash|PowerShell" and capture["hooks"][0]["async"] is True
@@ -60,9 +60,30 @@ def test_trial_settings_merge_hooks_idempotently(capsys):
 def test_trial_settings_mirror_bash_rules_for_powershell(capsys):
     _, settings = _trial_settings(capsys)
     allow = settings["permissions"]["allow"]
-    for rule in ("PowerShell(agentic-automl artifacts *)", "PowerShell(agentic-automl feedback-episodes *)"):
+    for rule in ("PowerShell(agentic-automl artifacts *)", "PowerShell(agentic-automl feedback-episodes *)",
+                 "PowerShell(cp .claude/scripts/*)", "PowerShell(Copy-Item .claude/scripts/*)"):
         assert rule in allow, rule
-    assert sum(r.startswith("PowerShell(") for r in allow) == sum(r.startswith("Bash(") for r in allow)
+    bash = {r[len("Bash("):] for r in allow if r.startswith("Bash(")}
+    assert bash <= {r[len("PowerShell("):] for r in allow if r.startswith("PowerShell(")}
+
+
+def test_hook_commands_are_shell_neutral():
+    for entries in load("hooks.json")["hooks"].values():
+        for e in entries:
+            assert "${" not in e["hooks"][0]["command"], e  # bash-only syntax breaks under PowerShell
+
+
+def test_claude_env_finds_git_bash_on_windows(monkeypatch, tmp_path):
+    git = tmp_path / "Git" / "mingw64" / "bin" / "git.exe"
+    bash = tmp_path / "Git" / "bin" / "bash.exe"
+    for p in (git, bash):
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("")
+    monkeypatch.setattr(cli.os, "name", "nt")
+    monkeypatch.setattr(cli.shutil, "which", lambda name: str(git) if name == "git" else None)
+    monkeypatch.delenv("CLAUDE_CODE_GIT_BASH_PATH", raising=False)
+    env = cli.claude_env(tmp_path)
+    assert env["CLAUDE_CODE_GIT_BASH_PATH"] == str(bash) and env["TRIAL_DIR"] == str(tmp_path)
 
 
 def test_runtime_python_substituted_in_trial(capsys, monkeypatch):

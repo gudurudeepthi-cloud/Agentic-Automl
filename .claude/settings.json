@@ -17,6 +17,8 @@
       "Bash(agentic-automl config *)",
       "Bash(/opt/conda/bin/python *)",
       "Bash(mkdir -p *)",
+      "Bash(cp .claude/scripts/*)",
+      "PowerShell(Copy-Item .claude/scripts/*)",
       "Edit(/trials/**/work/**)",
       "Edit(./work/**)",
       "Write(./work/**)",

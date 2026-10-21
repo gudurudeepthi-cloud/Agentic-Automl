@@ -4,10 +4,10 @@
       "name": "logistic_regression",
       "library": "scikit-learn",
       "hyperparameters": {
-        "C": 0.1
+        "C": 1.0
       },
-      "cv_score": 0.84985,
-      "cv_score_std": 0.01314,
+      "cv_score": 0.85065,
+      "cv_score_std": 0.01205,
       "train_time_seconds": 0.1,
       "artifact_path": "outputs/model/model.joblib"
     },
@@ -20,18 +20,18 @@
         "num_leaves": 15,
         "min_child_samples": 50
       },
-      "cv_score": 0.83868,
-      "cv_score_std": 0.01547,
-      "train_time_seconds": 0.3,
+      "cv_score": 0.84139,
+      "cv_score_std": 0.01971,
+      "train_time_seconds": 0.2,
       "artifact_path": "outputs/model/model_lightgbm.joblib"
     }
   ],
   "selected_model": "logistic_regression",
-  "selection_rationale": "Paired per-fold comparison, simplest first; a more complex family must beat the incumbent by more than the std of the per-fold gap. lightgbm vs logistic_regression: -0.0112 +/- 0.0055 per fold [-0.0124, -0.0178, -0.001, -0.0121, -0.0127] -> keep logistic_regression. Selected logistic_regression. Features: 16 of 18 raw after selection.",
+  "selection_rationale": "Paired per-fold comparison, simplest first; a more complex family must beat the incumbent by more than the std of the per-fold gap. lightgbm vs logistic_regression: -0.0093 +/- 0.0090 per fold [-0.0017, -0.022, -0.0013, -0.003, -0.0184] -> keep logistic_regression. Selected logistic_regression. Features: 16 of 19 raw after selection.",
   "primary_metric": "roc_auc",
   "cv_strategy": "5-fold StratifiedKFold",
   "training_script": "work/train.py",
   "model_artifact_path": "outputs/model/model.joblib",
   "random_seed": 42,
-  "notes": "Feature selection: work/feature_selection.py -> outputs/model/feature_selection.json (rule 'mean', redundancy removed []). Winner's validation-fold predictions: outputs/model/cv_predictions.parquet (for choosing a threshold without test). Winner CV: pr_auc 0.6747, log_loss 0.4169. Test split not used."
+  "notes": "Feature selection: work/feature_selection.py -> outputs/model/feature_selection.json (rule 'mean', redundancy removed []). Winner's validation-fold predictions: outputs/model/cv_predictions.parquet (for choosing a threshold without test). Winner CV: pr_auc 0.6754, log_loss 0.4159. Test split not used."
 }

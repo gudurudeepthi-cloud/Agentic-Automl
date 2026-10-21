@@ -118,8 +118,8 @@
     },
     {
       "name": "TotalCharges",
-      "role": "id",
-      "type": "row_identifier",
+      "role": "feature",
+      "type": "numeric_as_text",
       "missing_fraction": 0.0
     },
     {

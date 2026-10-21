@@ -89,8 +89,9 @@ _ERROR_MARKERS = re.compile(r"Traceback \(most recent call last\)|\bError\b|comm
 
 
 def failure_from_hook(hook: dict[str, Any]) -> dict[str, Any] | None:
-    """Extract a recoverable Bash failure from a PostToolUse / PostToolUseFailure payload."""
-    if hook.get("tool_name") != "Bash":
+    """Extract a recoverable shell failure from a PostToolUse / PostToolUseFailure payload
+    (Bash, or PowerShell on Windows)."""
+    if hook.get("tool_name") not in ("Bash", "PowerShell"):
         return None
     command = (hook.get("tool_input") or {}).get("command", "")
     if command.lstrip().startswith("agentic-automl feedback-episodes"):

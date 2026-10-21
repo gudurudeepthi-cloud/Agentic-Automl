@@ -32,8 +32,7 @@
   "preprocessing_plan": {
     "engine": "open_source",
     "drop_columns": [
-      "customerID",
-      "TotalCharges"
+      "customerID"
     ],
     "imputation": "Median + missing indicators, fit on train",
     "categorical_encoding": "One-hot, unknown ignored"

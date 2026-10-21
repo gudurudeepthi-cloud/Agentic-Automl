@@ -291,10 +291,17 @@
     {
       "name": "TotalCharges",
       "dtype": "str",
-      "semantic_type": "row_identifier",
-      "role": "id",
+      "semantic_type": "numeric_as_text",
+      "role": "feature",
       "missing_fraction": 0.0,
-      "n_unique": 2874
+      "n_unique": 2874,
+      "stats": {
+        "min": 18.8,
+        "median": 1391.15,
+        "max": 8670.1,
+        "unparseable_or_blank": 7,
+        "univariate_signal_train": 0.6364
+      }
     },
     {
       "name": "Churn",
@@ -305,5 +312,5 @@
       "n_unique": 2
     }
   ],
-  "generated_at": "2026-10-21T12:04:40+00:00"
+  "generated_at": "2026-10-21T12:59:23+00:00"
 }

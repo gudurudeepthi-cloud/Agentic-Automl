@@ -35,15 +35,15 @@
       "message": "customerID is unique per row (3000 values): an identifier, not a feature"
     },
     {
-      "severity": "warning",
+      "severity": "info",
       "columns": [
         "TotalCharges"
       ],
-      "message": "TotalCharges is unique per row (2874 values): an identifier, not a feature"
+      "message": "TotalCharges is numeric stored as text (7 blank/unparseable); aaml_common.split() coerces it to numbers (blanks -> NaN)"
     }
   ],
   "profiling_script": "work/profile_dataset.py",
   "segment_summary": {},
-  "generated_at": "2026-10-21T12:04:40+00:00",
+  "generated_at": "2026-10-21T12:59:23+00:00",
   "notes": "n_rows counts raw rows (3000); target and split counts are after removing 0 exact duplicates. Leakage probe on 2400 train rows (seed 42)."
 }

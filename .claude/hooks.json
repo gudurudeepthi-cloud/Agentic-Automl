@@ -1,5 +1,5 @@
 {
-  "description": "PreToolUse enforcement for trial workspaces. Claude Code does not read this file directly: the launcher merges these hooks into <trial>/.claude/settings.json on every new/resume/fork.",
+  "description": "PreToolUse enforcement for trial workspaces. Claude Code does not read this file directly: the launcher merges these hooks into <trial>/.claude/settings.json on every new/resume/fork. Commands stay shell-neutral (no ${VAR:-default}): the trial comes from TRIAL_DIR or the working directory, and on Windows hooks run under Git Bash or PowerShell.",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "agentic-automl artifacts validate-write --trial \"${TRIAL_DIR:-.}\"",
+            "command": "agentic-automl artifacts validate-write",
             "timeout": 15
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "agentic-automl feedback-episodes capture --trial \"${TRIAL_DIR:-.}\"",
+            "command": "agentic-automl feedback-episodes capture",
             "async": true
           }
         ]

@@ -112,10 +112,36 @@ def load_raw(c) -> dict[str, pd.DataFrame]:
     return out
 
 
+def coerce_numeric_text(s: pd.Series) -> pd.Series:
+    """'29.85' -> 29.85; blank / unparseable -> NaN."""
+    return pd.to_numeric(s.astype("string").str.strip().replace("", pd.NA), errors="coerce")
+
+
+def numeric_text_share(s: pd.Series) -> float:
+    """Share of non-blank text values that parse as numbers (0 for numeric dtypes or no values)."""
+    if pd.api.types.is_numeric_dtype(s):
+        return 0.0
+    text = s.dropna().astype(str).str.strip()
+    text = text[text != ""]
+    return float(pd.to_numeric(text, errors="coerce").notna().mean()) if len(text) else 0.0
+
+
+def _coerce_profiled_numeric_text(df: pd.DataFrame) -> pd.DataFrame:
+    """Columns the profile marked numeric_as_text become numbers in every later step."""
+    cols = [col["name"] for col in column_profile().get("columns", [])
+            if col.get("semantic_type") == "numeric_as_text" and col["name"] in df]
+    if cols:
+        df = df.copy()
+        for col in cols:
+            df[col] = coerce_numeric_text(df[col])
+    return df
+
+
 def _prepare(df: pd.DataFrame, c, dedupe: bool) -> tuple[pd.DataFrame, int]:
     n_dupes = int(df.duplicated().sum())
     if dedupe:
         df = df.drop_duplicates()
+    df = _coerce_profiled_numeric_text(df)
     if c.get("time_column"):
         df = df.copy()
         df[c["time_column"]] = pd.to_datetime(df[c["time_column"]])

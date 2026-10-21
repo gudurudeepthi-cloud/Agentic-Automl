@@ -112,6 +112,17 @@ for col in df.columns:
         role, sem = "drop", "constant"
         flags.append({"severity": "warning", "columns": [col], "message": f"{col} is constant ({s.dropna().iloc[0]!r})"
                       if s.notna().any() else f"{col} is entirely missing"})
+    elif not numeric and A.numeric_text_share(s) > 0.95:
+        # Numbers stored as text (e.g. "29.85" with " " for blanks): a numeric feature, not an id/categorical.
+        role, sem = "feature", "numeric_as_text"
+        conv = A.coerce_numeric_text(s)
+        q = conv.quantile([0, 0.5, 1])
+        stats = {"min": round(float(q.iloc[0]), 4), "median": round(float(q.iloc[1]), 4),
+                 "max": round(float(q.iloc[2]), 4), "unparseable_or_blank": int(conv.isna().sum() - s.isna().sum())}
+        flags.append({"severity": "info", "columns": [col],
+                      "message": f"{col} is numeric stored as text ({stats['unparseable_or_blank']} blank/unparseable); "
+                                 "aaml_common.split() coerces it to numbers (blanks -> NaN)"})
+        stats["univariate_signal_train"] = probe_strength(col, is_cat=False)
     elif n_unique >= 0.95 * len(df) and (not numeric or pd.api.types.is_integer_dtype(s)):
         role, sem = "id", "row_identifier"
         flags.append({"severity": "warning", "columns": [col],

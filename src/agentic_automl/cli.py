@@ -242,12 +242,37 @@ def build_claude_command(
     return cmd
 
 
-def launch_claude(trial: Path, cmd: list[str], *, mode: str, dev: bool = False) -> int:
+def git_bash_path() -> str | None:
+    """Git Bash for Claude Code on Windows, which runs hooks with it and fails closed (blocking
+    every Write) when it can't find one. Git installed per-user lives outside the default path."""
+    if os.name != "nt":
+        return None
+    git = shutil.which("git")
+    candidates = []
+    if git:  # <Git>/cmd/git.exe or <Git>/mingw64/bin/git.exe
+        for parent in Path(git).resolve().parents[:3]:
+            candidates.append(parent / "bin" / "bash.exe")
+    for base in (os.environ.get("ProgramFiles"), os.environ.get("LOCALAPPDATA")):
+        if base:
+            candidates += [Path(base) / "Git" / "bin" / "bash.exe", Path(base) / "Programs" / "Git" / "bin" / "bash.exe"]
+    return next((str(p) for p in candidates if p.is_file()), None)
+
+
+def claude_env(trial: Path) -> dict[str, str]:
     env = os.environ.copy()
     env["TRIAL_DIR"] = str(trial)
     env["UV_PROJECT"] = str(source_root() or PACKAGE_DIR)
     # Hooks shell out to `agentic-automl`; make sure the one running this launcher is found first.
     env["PATH"] = os.pathsep.join([str(Path(sys.executable).parent), env.get("PATH", "")])
+    if not env.get("CLAUDE_CODE_GIT_BASH_PATH"):
+        bash = git_bash_path()
+        if bash:
+            env["CLAUDE_CODE_GIT_BASH_PATH"] = bash
+    return env
+
+
+def launch_claude(trial: Path, cmd: list[str], *, mode: str, dev: bool = False) -> int:
+    env = claude_env(trial)
     if dev:
         env["AGENTIC_AUTOML_DEV"] = "1"
     artifacts.record_session(trial, mode)

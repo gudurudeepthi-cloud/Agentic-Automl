@@ -201,8 +201,7 @@ def run_agent(prepared: PreparedEvalTrial, ctx: EvalRunContext) -> AgentRunResul
         cmd += ["--model", ctx.model]
     if ctx.effort:
         cmd += ["--effort", ctx.effort]
-    env = {**os.environ, "TRIAL_DIR": str(trial),
-           "PATH": os.pathsep.join([str(Path(sys.executable).parent), os.environ.get("PATH", "")])}
+    env = cli.claude_env(trial)
     log = trial / "work" / "eval_agent_output.json"
     log.parent.mkdir(parents=True, exist_ok=True)
     try:
