@@ -1,0 +1,309 @@
+{
+  "dataset_path": "{{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/telco_churn.csv",
+  "columns": [
+    {
+      "name": "customerID",
+      "dtype": "str",
+      "semantic_type": "row_identifier",
+      "role": "id",
+      "missing_fraction": 0.0,
+      "n_unique": 3000
+    },
+    {
+      "name": "gender",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "top": {
+          "Female": 1500,
+          "Male": 1500
+        },
+        "univariate_signal_train": 0.5242
+      }
+    },
+    {
+      "name": "SeniorCitizen",
+      "dtype": "int64",
+      "semantic_type": "boolean",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "univariate_signal_train": 0.5734
+      }
+    },
+    {
+      "name": "Partner",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "top": {
+          "No": 1538,
+          "Yes": 1462
+        },
+        "univariate_signal_train": 0.5596
+      }
+    },
+    {
+      "name": "Dependents",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "top": {
+          "No": 2070,
+          "Yes": 930
+        },
+        "univariate_signal_train": 0.5729
+      }
+    },
+    {
+      "name": "tenure",
+      "dtype": "int64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 73,
+      "stats": {
+        "min": 0.0,
+        "p01": 1.0,
+        "median": 29.0,
+        "p99": 72.0,
+        "max": 72.0,
+        "univariate_signal_train": 0.7281
+      }
+    },
+    {
+      "name": "PhoneService",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "top": {
+          "Yes": 2704,
+          "No": 296
+        },
+        "univariate_signal_train": 0.5112
+      }
+    },
+    {
+      "name": "MultipleLines",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "No": 1454,
+          "Yes": 1250,
+          "No phone service": 296
+        },
+        "univariate_signal_train": 0.511
+      }
+    },
+    {
+      "name": "InternetService",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "Fiber optic": 1293,
+          "DSL": 1063,
+          "No": 644
+        },
+        "univariate_signal_train": 0.6932
+      }
+    },
+    {
+      "name": "OnlineSecurity",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "No": 1506,
+          "Yes": 850,
+          "No internet service": 644
+        },
+        "univariate_signal_train": 0.7034
+      }
+    },
+    {
+      "name": "OnlineBackup",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "No": 1281,
+          "Yes": 1075,
+          "No internet service": 644
+        },
+        "univariate_signal_train": 0.6596
+      }
+    },
+    {
+      "name": "DeviceProtection",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "No": 1301,
+          "Yes": 1055,
+          "No internet service": 644
+        },
+        "univariate_signal_train": 0.6694
+      }
+    },
+    {
+      "name": "TechSupport",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "No": 1481,
+          "Yes": 875,
+          "No internet service": 644
+        },
+        "univariate_signal_train": 0.695
+      }
+    },
+    {
+      "name": "StreamingTV",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "Yes": 1206,
+          "No": 1150,
+          "No internet service": 644
+        },
+        "univariate_signal_train": 0.6177
+      }
+    },
+    {
+      "name": "StreamingMovies",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "Yes": 1181,
+          "No": 1175,
+          "No internet service": 644
+        },
+        "univariate_signal_train": 0.613
+      }
+    },
+    {
+      "name": "Contract",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "Month-to-month": 1653,
+          "Two year": 711,
+          "One year": 636
+        },
+        "univariate_signal_train": 0.729
+      }
+    },
+    {
+      "name": "PaperlessBilling",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "top": {
+          "Yes": 1765,
+          "No": 1235
+        },
+        "univariate_signal_train": 0.6049
+      }
+    },
+    {
+      "name": "PaymentMethod",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 4,
+      "stats": {
+        "top": {
+          "Electronic check": 1005,
+          "Mailed check": 693,
+          "Credit card (automatic)": 655,
+          "Bank transfer (automatic)": 647
+        },
+        "univariate_signal_train": 0.6702
+      }
+    },
+    {
+      "name": "MonthlyCharges",
+      "dtype": "float64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 1173,
+      "stats": {
+        "min": 18.25,
+        "p01": 19.1995,
+        "median": 70.55,
+        "p99": 115.1,
+        "max": 118.65,
+        "univariate_signal_train": 0.6288
+      }
+    },
+    {
+      "name": "TotalCharges",
+      "dtype": "str",
+      "semantic_type": "row_identifier",
+      "role": "id",
+      "missing_fraction": 0.0,
+      "n_unique": 2874
+    },
+    {
+      "name": "Churn",
+      "dtype": "str",
+      "semantic_type": "binary",
+      "role": "target",
+      "missing_fraction": 0.0,
+      "n_unique": 2
+    }
+  ],
+  "generated_at": "2026-10-21T12:04:40+00:00"
+}

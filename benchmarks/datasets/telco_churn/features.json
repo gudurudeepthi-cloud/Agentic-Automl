@@ -1,0 +1,132 @@
+{
+  "dataset_id": "telco_churn",
+  "generated_by": "scripts/generate_dataset_seeds.py (smoke sample)",
+  "columns": [
+    {
+      "name": "customerID",
+      "role": "id",
+      "type": "row_identifier",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "gender",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "SeniorCitizen",
+      "role": "feature",
+      "type": "boolean",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "Partner",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "Dependents",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "tenure",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "PhoneService",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "MultipleLines",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "InternetService",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "OnlineSecurity",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "OnlineBackup",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "DeviceProtection",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "TechSupport",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "StreamingTV",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "StreamingMovies",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "Contract",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "PaperlessBilling",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "PaymentMethod",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "MonthlyCharges",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "TotalCharges",
+      "role": "id",
+      "type": "row_identifier",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "Churn",
+      "role": "target",
+      "type": "binary",
+      "missing_fraction": 0.0
+    }
+  ]
+}

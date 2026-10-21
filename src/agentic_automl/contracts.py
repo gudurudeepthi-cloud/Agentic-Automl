@@ -196,17 +196,18 @@ def claude_template_dir() -> Path:
 
 
 def step_templates_dir() -> Path:
-    """Step-template scripts (repo `scripts/`), copied into each trial as `.claude/scripts/`.
+    """Step-template scripts (repo `scripts/steps/`), copied into each trial as `.claude/scripts/`.
 
-    `scripts/dev/` (contributor tools such as the synthetic-data generator) is never copied.
+    The rest of `scripts/` is contributor tooling (evals, benchmarks, release) and never
+    reaches a trial; the synthetic-data generator there would reveal the answer key.
     """
-    bundled = PACKAGE_DIR / "_data" / "scripts"
+    bundled = PACKAGE_DIR / "_data" / "steps"
     if bundled.is_dir():
         return bundled
     root = source_root()
     if root is not None:
-        return root / "scripts"
-    raise FileNotFoundError("Cannot locate scripts directory")
+        return root / "scripts" / "steps"
+    raise FileNotFoundError("Cannot locate scripts/steps directory")
 
 
 def storage_dir() -> Path:

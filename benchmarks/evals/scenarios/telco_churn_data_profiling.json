@@ -1,0 +1,96 @@
+{
+  "id": "telco_churn_data_profiling",
+  "dataset_id": "telco_churn",
+  "data_size": "smoke",
+  "answer_bank": [
+    {
+      "match": "target column",
+      "answer": "The target column is Churn (positive class 'Yes')."
+    },
+    {
+      "match": "dataset path",
+      "answer": "Use {{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/telco_churn.csv."
+    },
+    {
+      "match": "business context",
+      "answer": "Score customers by churn risk for a retention campaign."
+    },
+    {
+      "match": "split",
+      "answer": "Use a random_stratified split with 20% held out for test."
+    },
+    {
+      "match": "metric",
+      "answer": "Optimise roc_auc; also report pr_auc, log_loss."
+    },
+    {
+      "match": "model preference",
+      "answer": "A single baseline model is fine (single_baseline)."
+    },
+    {
+      "match": "deployment",
+      "answer": "Exploratory baseline; no production parity needed (open_source engine is fine)."
+    },
+    {
+      "match": "approve",
+      "answer": "Yes, approved. Proceed."
+    },
+    {
+      "match": "compute",
+      "answer": "Yes, go ahead; keep each run under 10 minutes."
+    }
+  ],
+  "dataset_path": "benchmarks/evals/fixtures/datasets/telco_churn.csv",
+  "suite": "component",
+  "tiers": [
+    "component"
+  ],
+  "entry_skill": "data-profiling",
+  "seed": {
+    "kind": "fixture",
+    "name": "telco_churn_after_contract"
+  },
+  "initial_prompt": "Build a model that predicts which telecom customers will churn, for a retention campaign. The prediction contract is already approved; profile the data.",
+  "limits": {
+    "max_turns": 40,
+    "max_budget_usd": 5,
+    "timeout_seconds": 1800
+  },
+  "expected_artifacts": [
+    "dataset_profile",
+    "column_profile"
+  ],
+  "invariants": [
+    {
+      "type": "file_contains",
+      "name": "customerID_is_id",
+      "path": "column_profile.json",
+      "patterns": [
+        "\"name\": \"customerID\",[^}]*\"role\": \"id\""
+      ]
+    },
+    {
+      "type": "file_contains",
+      "name": "Churn_is_target",
+      "path": "column_profile.json",
+      "patterns": [
+        "\"name\": \"Churn\",[^}]*\"role\": \"target\""
+      ]
+    },
+    {
+      "type": "file_present",
+      "name": "profiling_script_kept",
+      "path": "work/profile_dataset.py"
+    },
+    {
+      "type": "max_validation_failures",
+      "max_count": 2
+    }
+  ],
+  "environment": {
+    "requires": [
+      "claude",
+      "runtime_python"
+    ]
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "engine": "open_source",
+  "pipeline_script": "work/preprocess.py",
+  "pipeline_artifact": "outputs/pipeline/preprocessor.joblib",
+  "input_features": [
+    "gender",
+    "SeniorCitizen",
+    "Partner",
+    "Dependents",
+    "tenure",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod",
+    "MonthlyCharges"
+  ],
+  "output_feature_count": 44,
+  "transformations": [
+    {
+      "step": "dedupe",
+      "description": "Dropped 0 exact duplicate rows"
+    },
+    {
+      "step": "split",
+      "description": "random_stratified split"
+    },
+    {
+      "step": "drop",
+      "columns": [
+        "customerID",
+        "TotalCharges"
+      ],
+      "description": "Plan drop_columns (ids, time, constants, leakage, ...)"
+    },
+    {
+      "step": "impute",
+      "columns": [],
+      "description": "Median + missing indicators, fit on train"
+    },
+    {
+      "step": "onehot",
+      "columns": [
+        "gender",
+        "Partner",
+        "Dependents",
+        "PhoneService",
+        "MultipleLines",
+        "InternetService",
+        "OnlineSecurity",
+        "OnlineBackup",
+        "DeviceProtection",
+        "TechSupport",
+        "StreamingTV",
+        "StreamingMovies",
+        "Contract",
+        "PaperlessBilling",
+        "PaymentMethod"
+      ],
+      "description": "Missing -> '__missing__'; unknown levels ignored"
+    }
+  ],
+  "dropped_columns": [
+    "customerID",
+    "TotalCharges"
+  ],
+  "train_rows": 2400,
+  "test_rows": 600,
+  "leakage_checks": [
+    "Leakage suspects excluded: []",
+    "Imputer and encoder fit on train only; test passes through transform",
+    "Row counts match dataset_profile (train 2400, test 600)"
+  ],
+  "notes": "Model-specific scaling/log transforms are applied inside each model pipeline, per CV fold."
+}

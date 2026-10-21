@@ -1,0 +1,315 @@
+{
+  "dataset_path": "{{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
+  "columns": [
+    {
+      "name": "transaction_id",
+      "dtype": "str",
+      "semantic_type": "row_identifier",
+      "role": "id",
+      "missing_fraction": 0.0,
+      "n_unique": 19966
+    },
+    {
+      "name": "customer_id",
+      "dtype": "str",
+      "semantic_type": "entity_identifier",
+      "role": "id",
+      "missing_fraction": 0.0,
+      "n_unique": 3322
+    },
+    {
+      "name": "event_time",
+      "dtype": "datetime64[us]",
+      "semantic_type": "datetime",
+      "role": "time",
+      "missing_fraction": 0.0,
+      "n_unique": 19957,
+      "stats": {
+        "min": "2025-01-01 00:03:56",
+        "max": "2025-06-29 22:56:00",
+        "test_cutoff": "2025-05-25 01:35:32"
+      }
+    },
+    {
+      "name": "amount",
+      "dtype": "float64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 13307,
+      "stats": {
+        "min": 1.21,
+        "p01": 4.9495,
+        "median": 64.2,
+        "p99": 1383.8015,
+        "max": 9306.59,
+        "univariate_signal_train": 0.8203
+      }
+    },
+    {
+      "name": "currency",
+      "dtype": "str",
+      "semantic_type": "constant",
+      "role": "drop",
+      "missing_fraction": 0.0,
+      "n_unique": 1
+    },
+    {
+      "name": "merchant_id",
+      "dtype": "str",
+      "semantic_type": "high_cardinality_categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3974,
+      "stats": {
+        "top": {
+          "M03525": 14,
+          "M00460": 13,
+          "M01700": 13,
+          "M03449": 13,
+          "M02806": 13
+        },
+        "univariate_signal_train": 0.5417
+      }
+    },
+    {
+      "name": "merchant_category",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 11,
+      "stats": {
+        "top": {
+          "grocery": 4498,
+          "restaurants": 2955,
+          "fashion": 1894,
+          "fuel": 1888,
+          "utilities": 1862
+        },
+        "univariate_signal_train": 0.8394
+      }
+    },
+    {
+      "name": "channel",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 3,
+      "stats": {
+        "top": {
+          "pos": 10972,
+          "online": 7592,
+          "atm": 1402
+        },
+        "univariate_signal_train": 0.6124
+      }
+    },
+    {
+      "name": "card_present",
+      "dtype": "int64",
+      "semantic_type": "boolean",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "univariate_signal_train": 0.6122
+      }
+    },
+    {
+      "name": "country",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 8,
+      "stats": {
+        "top": {
+          "US": 19688,
+          "CA": 85,
+          "MX": 58,
+          "GB": 54,
+          "NG": 28
+        },
+        "univariate_signal_train": 0.5318
+      }
+    },
+    {
+      "name": "is_foreign",
+      "dtype": "int64",
+      "semantic_type": "boolean",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "univariate_signal_train": 0.5076
+      }
+    },
+    {
+      "name": "hour_of_day",
+      "dtype": "int64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 24,
+      "stats": {
+        "min": 0.0,
+        "p01": 0.0,
+        "median": 11.0,
+        "p99": 23.0,
+        "max": 23.0,
+        "univariate_signal_train": 0.5566
+      }
+    },
+    {
+      "name": "customer_age",
+      "dtype": "float64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0202,
+      "n_unique": 71,
+      "stats": {
+        "min": 18.0,
+        "p01": 18.0,
+        "median": 44.0,
+        "p99": 77.0,
+        "max": 90.0,
+        "univariate_signal_train": 0.5082
+      }
+    },
+    {
+      "name": "account_tenure_days",
+      "dtype": "int64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 1687,
+      "stats": {
+        "min": 1.0,
+        "p01": 10.0,
+        "median": 591.0,
+        "p99": 3885.0,
+        "max": 7001.0,
+        "univariate_signal_train": 0.5627
+      }
+    },
+    {
+      "name": "txn_count_24h",
+      "dtype": "int64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 26,
+      "stats": {
+        "min": 0.0,
+        "p01": 0.0,
+        "median": 1.0,
+        "p99": 14.0,
+        "max": 28.0,
+        "univariate_signal_train": 0.8083
+      }
+    },
+    {
+      "name": "avg_amount_30d",
+      "dtype": "float64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 11105,
+      "stats": {
+        "min": 4.72,
+        "p01": 16.8555,
+        "median": 68.86,
+        "p99": 292.3245,
+        "max": 769.21,
+        "univariate_signal_train": 0.5305
+      }
+    },
+    {
+      "name": "amount_to_avg_ratio",
+      "dtype": "float64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 5408,
+      "stats": {
+        "min": 0.027,
+        "p01": 0.114,
+        "median": 0.899,
+        "p99": 14.7978,
+        "max": 49.194,
+        "univariate_signal_train": 0.8529
+      }
+    },
+    {
+      "name": "distance_from_home_km",
+      "dtype": "float64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0691,
+      "n_unique": 1083,
+      "stats": {
+        "min": 0.0,
+        "p01": 0.1,
+        "median": 10.5,
+        "p99": 2929.346,
+        "max": 8988.3,
+        "univariate_signal_train": 0.5332
+      }
+    },
+    {
+      "name": "device_type",
+      "dtype": "str",
+      "semantic_type": "categorical",
+      "role": "feature",
+      "missing_fraction": 0.6198,
+      "n_unique": 4,
+      "stats": {
+        "top": {
+          "ios": 1983,
+          "web_desktop": 1975,
+          "web_mobile": 1860,
+          "android": 1774
+        },
+        "univariate_signal_train": 0.5898
+      }
+    },
+    {
+      "name": "failed_logins_7d",
+      "dtype": "int64",
+      "semantic_type": "numeric",
+      "role": "feature",
+      "missing_fraction": 0.0,
+      "n_unique": 10,
+      "stats": {
+        "min": 0.0,
+        "p01": 0.0,
+        "median": 0.0,
+        "p99": 4.0,
+        "max": 9.0,
+        "univariate_signal_train": 0.8024
+      }
+    },
+    {
+      "name": "chargeback_flag",
+      "dtype": "int64",
+      "semantic_type": "boolean",
+      "role": "leakage_suspect",
+      "missing_fraction": 0.0,
+      "n_unique": 2,
+      "stats": {
+        "univariate_signal_train": 0.9609
+      }
+    },
+    {
+      "name": "is_fraud",
+      "dtype": "int64",
+      "semantic_type": "binary",
+      "role": "target",
+      "missing_fraction": 0.0,
+      "n_unique": 2
+    }
+  ],
+  "generated_at": "2026-10-21T09:13:12+00:00"
+}

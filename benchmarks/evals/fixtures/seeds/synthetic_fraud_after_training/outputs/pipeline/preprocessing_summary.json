@@ -1,0 +1,80 @@
+{
+  "engine": "open_source",
+  "pipeline_script": "work/preprocess.py",
+  "pipeline_artifact": "outputs/pipeline/preprocessor.joblib",
+  "input_features": [
+    "amount",
+    "merchant_category",
+    "channel",
+    "card_present",
+    "country",
+    "is_foreign",
+    "hour_of_day",
+    "customer_age",
+    "account_tenure_days",
+    "txn_count_24h",
+    "avg_amount_30d",
+    "amount_to_avg_ratio",
+    "distance_from_home_km",
+    "device_type",
+    "failed_logins_7d"
+  ],
+  "output_feature_count": 40,
+  "transformations": [
+    {
+      "step": "dedupe",
+      "description": "Dropped 34 exact duplicate rows"
+    },
+    {
+      "step": "split",
+      "description": "temporal split, train < 2025-05-25 01:35:32 <= test"
+    },
+    {
+      "step": "drop",
+      "columns": [
+        "transaction_id",
+        "customer_id",
+        "event_time",
+        "currency",
+        "merchant_id",
+        "chargeback_flag"
+      ],
+      "description": "Plan drop_columns (ids, time, constants, leakage, ...)"
+    },
+    {
+      "step": "impute",
+      "columns": [
+        "customer_age",
+        "distance_from_home_km"
+      ],
+      "description": "Median + missing indicators, fit on train"
+    },
+    {
+      "step": "onehot",
+      "columns": [
+        "merchant_category",
+        "channel",
+        "country",
+        "device_type"
+      ],
+      "description": "Missing -> '__missing__'; unknown levels ignored"
+    }
+  ],
+  "dropped_columns": [
+    "transaction_id",
+    "customer_id",
+    "event_time",
+    "currency",
+    "merchant_id",
+    "chargeback_flag"
+  ],
+  "train_rows": 15972,
+  "test_rows": 3994,
+  "leakage_checks": [
+    "Leakage suspects excluded: ['chargeback_flag']",
+    "Imputer and encoder fit on train only; test passes through transform",
+    "Row counts match dataset_profile (train 15972, test 3994)",
+    "Every test row is later than every train row"
+  ],
+  "notes": "Model-specific scaling/log transforms are applied inside each model pipeline, per CV fold."
+}

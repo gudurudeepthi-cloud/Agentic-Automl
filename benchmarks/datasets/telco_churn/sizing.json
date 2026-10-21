@@ -1,0 +1,8 @@
+{
+  "dataset_id": "telco_churn",
+  "rows": 7043,
+  "columns": 21,
+  "file_size_mb": 0.97,
+  "positive_rate": 0.27333,
+  "smoke_rows": 3000
+}

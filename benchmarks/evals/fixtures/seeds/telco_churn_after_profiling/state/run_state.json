@@ -1,0 +1,88 @@
+{
+  "trial_id": "trial",
+  "created_at": "2026-10-21T12:04:37+00:00",
+  "updated_at": "2026-10-21T12:04:41+00:00",
+  "artifacts": [
+    {
+      "key": "prediction_contract",
+      "path": "prediction_contract.json",
+      "source_skill": "prediction-contract",
+      "saved_at": "2026-10-21T12:04:37+00:00",
+      "version": 1
+    },
+    {
+      "key": "dataset_profile",
+      "path": "dataset_profile.json",
+      "source_skill": "data-profiling",
+      "saved_at": "2026-10-21T12:04:41+00:00",
+      "version": 1
+    },
+    {
+      "key": "column_profile",
+      "path": "column_profile.json",
+      "source_skill": "data-profiling",
+      "saved_at": "2026-10-21T12:04:41+00:00",
+      "version": 1
+    }
+  ],
+  "gates": {
+    "prediction_contract_approved": true,
+    "dataset_profile_complete": true,
+    "column_profile_complete": true,
+    "workflow_plan_approved": false,
+    "preprocessing_complete": false,
+    "training_complete": false,
+    "onnx_deployment_complete": false,
+    "auto_research_complete": false,
+    "evaluation_complete": false,
+    "explainability_complete": false,
+    "model_development_documentation_complete": false
+  },
+  "sessions": [],
+  "validation_log": [
+    {
+      "at": "2026-10-21T12:04:37+00:00",
+      "action": "begin-skill",
+      "ok": true,
+      "key": null,
+      "skill": "prediction-contract"
+    },
+    {
+      "at": "2026-10-21T12:04:37+00:00",
+      "action": "save-artifact",
+      "ok": true,
+      "key": "prediction_contract",
+      "skill": "prediction-contract"
+    },
+    {
+      "at": "2026-10-21T12:04:37+00:00",
+      "action": "begin-skill",
+      "ok": true,
+      "key": null,
+      "skill": "data-profiling"
+    },
+    {
+      "at": "2026-10-21T12:04:41+00:00",
+      "action": "save-artifact",
+      "ok": true,
+      "key": "dataset_profile",
+      "skill": "data-profiling"
+    },
+    {
+      "at": "2026-10-21T12:04:41+00:00",
+      "action": "save-artifact",
+      "ok": true,
+      "key": "column_profile",
+      "skill": "data-profiling"
+    }
+  ],
+  "goal": "Score customers by churn risk for a retention campaign.",
+  "dataset_path": "{{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/telco_churn.csv",
+  "pending_slug": null,
+  "forked_from": null,
+  "package_version": "0.1.0",
+  "last_claude_session_id": null,
+  "previous_trial_dirs": [],
+  "active_skill": "data-profiling",
+  "developer_focus": []
+}

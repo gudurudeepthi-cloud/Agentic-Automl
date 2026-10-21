@@ -1,0 +1,123 @@
+{
+  "dataset_path": "{{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
+  "n_rows": 20000,
+  "n_columns": 22,
+  "target_column": "is_fraud",
+  "target_summary": {
+    "counts": {
+      "0": 19755,
+      "1": 211
+    },
+    "positive_rate": 0.01057
+  },
+  "split_summary": {
+    "strategy": "temporal",
+    "after_dedup": true,
+    "cutoff": "2025-05-25 01:35:32",
+    "train": {
+      "rows": 15972,
+      "positives": 170,
+      "positive_rate": 0.01064
+    },
+    "test": {
+      "rows": 3994,
+      "positives": 41,
+      "positive_rate": 0.01027
+    }
+  },
+  "missing_value_summary": {
+    "customer_age": 0.0202,
+    "distance_from_home_km": 0.0691,
+    "device_type": 0.6198
+  },
+  "duplicate_rows": 34,
+  "data_quality_flags": [
+    {
+      "severity": "warning",
+      "columns": [
+        "transaction_id"
+      ],
+      "message": "transaction_id is unique per row (19966 values): an identifier, not a feature"
+    },
+    {
+      "severity": "warning",
+      "columns": [
+        "currency"
+      ],
+      "message": "currency is constant ('USD')"
+    },
+    {
+      "severity": "warning",
+      "columns": [
+        "merchant_id"
+      ],
+      "message": "merchant_id has 3974 levels; do not one-hot encode (drop, or use it as a novelty/frequency feature)"
+    },
+    {
+      "severity": "warning",
+      "columns": [
+        "device_type"
+      ],
+      "message": "device_type is 62% missing"
+    },
+    {
+      "severity": "critical",
+      "columns": [
+        "chargeback_flag"
+      ],
+      "message": "chargeback_flag alone nearly determines the target (train signal 0.9609); check whether it is known before the outcome"
+    },
+    {
+      "severity": "warning",
+      "columns": [
+        "is_fraud"
+      ],
+      "message": "Only 41 test positives: test metrics will be noisy"
+    },
+    {
+      "severity": "warning",
+      "columns": [],
+      "message": "34 exact duplicate rows; dropped before splitting"
+    },
+    {
+      "severity": "info",
+      "columns": [
+        "is_fraud",
+        "event_time"
+      ],
+      "message": "Positive rate drifts over time (0.721% -> 1.074%)"
+    },
+    {
+      "severity": "info",
+      "columns": [
+        "customer_id"
+      ],
+      "message": "~6.0 rows per customer_id; 2278 entities appear in both train and test"
+    }
+  ],
+  "profiling_script": "work/profile_dataset.py",
+  "segment_summary": {
+    "positive_rate_by_month": {
+      "2025-01": 0.00721,
+      "2025-02": 0.01111,
+      "2025-03": 0.01078,
+      "2025-04": 0.01141,
+      "2025-05": 0.01232,
+      "2025-06": 0.01074
+    },
+    "rows_by_month": {
+      "2025-01": 3467,
+      "2025-02": 3059,
+      "2025-03": 3524,
+      "2025-04": 3329,
+      "2025-05": 3328,
+      "2025-06": 3259
+    },
+    "rows_per_entity": {
+      "mean": 6.01,
+      "max": 17
+    }
+  },
+  "generated_at": "2026-10-21T09:13:12+00:00",
+  "notes": "n_rows counts raw rows (20000); target and split counts are after removing 34 exact duplicates. Leakage probe on 15972 train rows (seed 42)."
+}

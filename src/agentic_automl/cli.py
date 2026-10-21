@@ -42,7 +42,7 @@ SUBTOOLS = {
 TRUST_FILE = "work/trust.md"
 SESSION_BRIEF = "work/session_brief.md"
 RUNTIME_IGNORE = shutil.ignore_patterns("settings.local.json", "__pycache__", "*.pyc")
-TEMPLATES_IGNORE = shutil.ignore_patterns("dev", "__pycache__", "*.pyc")  # scripts/dev never reaches a trial
+TEMPLATES_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc")
 PACKAGE_NAME = "agentic-automl"
 
 
@@ -57,7 +57,7 @@ class CliError(Exception):
 
 def sync_runtime_files(trial: Path) -> None:
     """Copy the runtime .claude tree into the trial (settings.local.json is trial-owned), plus the
-    step templates from scripts/ as .claude/scripts/."""
+    step templates from scripts/steps/ as .claude/scripts/."""
     shutil.copytree(claude_template_dir(), trial / ".claude", dirs_exist_ok=True, ignore=RUNTIME_IGNORE)
     shutil.copytree(step_templates_dir(), trial / ".claude" / "scripts", dirs_exist_ok=True, ignore=TEMPLATES_IGNORE)
     materialize_settings(trial)

@@ -38,7 +38,7 @@ packages = ["src/agentic_automl"]
 [tool.hatch.build.targets.wheel.force-include]
 "schemas" = "agentic_automl/_data/schemas"
 ".claude" = "agentic_automl/_data/claude"
-"scripts" = "agentic_automl/_data/scripts"  # step templates; the launcher skips scripts/dev
+"scripts/steps" = "agentic_automl/_data/steps"  # step templates only; the rest of scripts/ is contributor tooling
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

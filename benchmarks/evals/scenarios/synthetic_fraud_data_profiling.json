@@ -1,0 +1,108 @@
+{
+  "id": "synthetic_fraud_data_profiling",
+  "dataset_id": "synthetic_fraud",
+  "data_size": "smoke",
+  "answer_bank": [
+    {
+      "match": "target column",
+      "answer": "The target column is is_fraud (positive class 1)."
+    },
+    {
+      "match": "dataset path",
+      "answer": "Use {{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/synthetic_fraud.csv."
+    },
+    {
+      "match": "business context",
+      "answer": "Rank card transactions so analysts review the riskiest 1% first."
+    },
+    {
+      "match": "split",
+      "answer": "Use a temporal on event_time split with 20% held out for test."
+    },
+    {
+      "match": "metric",
+      "answer": "Optimise pr_auc; also report roc_auc, precision_at_top_1pct, recall_at_top_1pct."
+    },
+    {
+      "match": "model preference",
+      "answer": "A single baseline model is fine (single_baseline)."
+    },
+    {
+      "match": "deployment",
+      "answer": "Exploratory baseline; no production parity needed (open_source engine is fine)."
+    },
+    {
+      "match": "approve",
+      "answer": "Yes, approved. Proceed."
+    },
+    {
+      "match": "compute",
+      "answer": "Yes, go ahead; keep each run under 10 minutes."
+    },
+    {
+      "match": "entity",
+      "answer": "customer_id identifies the entity; rows repeat per entity."
+    }
+  ],
+  "dataset_path": "benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
+  "suite": "component",
+  "tiers": [
+    "component"
+  ],
+  "entry_skill": "data-profiling",
+  "seed": {
+    "kind": "fixture",
+    "name": "synthetic_fraud_after_contract"
+  },
+  "initial_prompt": "Build a model that flags likely fraudulent card transactions for analyst review. The prediction contract is already approved; profile the data.",
+  "limits": {
+    "max_turns": 40,
+    "max_budget_usd": 5,
+    "timeout_seconds": 1800
+  },
+  "expected_artifacts": [
+    "dataset_profile",
+    "column_profile"
+  ],
+  "invariants": [
+    {
+      "type": "file_contains",
+      "name": "chargeback_flag_is_leakage_suspect",
+      "path": "column_profile.json",
+      "patterns": [
+        "\"name\": \"chargeback_flag\",[^}]*\"role\": \"leakage_suspect\""
+      ]
+    },
+    {
+      "type": "file_contains",
+      "name": "currency_is_drop",
+      "path": "column_profile.json",
+      "patterns": [
+        "\"name\": \"currency\",[^}]*\"role\": \"drop\""
+      ]
+    },
+    {
+      "type": "file_contains",
+      "name": "transaction_id_is_id",
+      "path": "column_profile.json",
+      "patterns": [
+        "\"name\": \"transaction_id\",[^}]*\"role\": \"id\""
+      ]
+    },
+    {
+      "type": "file_present",
+      "name": "profiling_script_kept",
+      "path": "work/profile_dataset.py"
+    },
+    {
+      "type": "max_validation_failures",
+      "max_count": 2
+    }
+  ],
+  "environment": {
+    "requires": [
+      "claude",
+      "runtime_python"
+    ]
+  }
+}

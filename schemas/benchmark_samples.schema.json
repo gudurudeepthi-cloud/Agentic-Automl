@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "benchmark_samples.schema.json",
+  "title": "Benchmark sample manifest",
+  "description": "benchmarks/datasets/<id>/samples.json: committed smoke samples and synthetic twins of a dataset.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dataset_id", "samples"],
+  "properties": {
+    "dataset_id": {"type": "string"},
+    "samples": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["name", "path", "rows", "sha256"],
+        "properties": {
+          "name": {"type": "string"},
+          "path": {"type": "string"},
+          "rows": {"type": "integer", "minimum": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "seed": {"type": "integer"},
+          "method": {"type": "string"}
+        }
+      }
+    },
+    "synthetic_twins": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["config", "path"],
+        "properties": {"config": {"type": "string"}, "path": {"type": "string"}, "rows": {"type": "integer"}}
+      }
+    }
+  }
+}

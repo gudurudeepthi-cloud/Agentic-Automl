@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "eval_scenario.schema.json",
+  "title": "Eval scenario",
+  "description": "One agent-eval case: seed a trial, optionally run the agent, score invariants on the result.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "dataset_id", "entry_skill", "seed", "initial_prompt", "answer_bank", "limits",
+               "expected_artifacts", "invariants", "environment"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "suite": {"type": "string"},
+    "dataset_id": {"type": "string", "minLength": 1},
+    "dataset_path": {"type": "string"},
+    "data_size": {"enum": ["smoke", "small", "full"]},
+    "entry_skill": {"type": "string", "minLength": 1},
+    "tiers": {
+      "type": "array", "minItems": 1,
+      "items": {"enum": ["deterministic", "component", "e2e", "real"]},
+      "description": "Tiers this scenario runs in. deterministic = score the seed as-is (no agent)."
+    },
+    "seed": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["empty", "fixture"]},
+        "name": {"type": "string", "description": "Directory under benchmarks/evals/fixtures/seeds/ (kind=fixture)."}
+      }
+    },
+    "initial_prompt": {"type": "string", "minLength": 1},
+    "answer_bank": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["match", "answer"],
+        "properties": {"match": {"type": "string", "minLength": 1}, "answer": {"type": "string", "minLength": 1}}
+      }
+    },
+    "limits": {
+      "type": "object", "additionalProperties": false,
+      "required": ["max_turns", "max_budget_usd", "timeout_seconds"],
+      "properties": {
+        "max_turns": {"type": "integer", "minimum": 1},
+        "max_budget_usd": {"type": "number", "minimum": 0},
+        "timeout_seconds": {"type": "integer", "minimum": 1}
+      }
+    },
+    "expected_artifacts": {"type": "array", "items": {"type": "string"}},
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {"enum": ["file_present", "file_absent", "file_contains", "artifact_present", "metric_band",
+                            "max_validation_failures", "feedback_credit_marker_parseable"]},
+          "name": {"type": "string"},
+          "path": {"type": "string"},
+          "patterns": {"type": "array", "items": {"type": "string"}},
+          "absent_patterns": {"type": "array", "items": {"type": "string"}},
+          "artifact": {"type": "string"},
+          "metric": {"type": "string", "description": "Dotted path inside the artifact, e.g. primary_metric_value."},
+          "min": {"type": "number"},
+          "max": {"type": "number"},
+          "max_count": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "requires": {"type": "array", "items": {"enum": ["claude", "runtime_python", "gcs", "github"]}},
+        "notes": {"type": "string"}
+      }
+    }
+  }
+}

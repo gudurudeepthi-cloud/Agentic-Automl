@@ -1,0 +1,53 @@
+{
+  "trial_id": "trial",
+  "created_at": "2026-10-21T09:13:08+00:00",
+  "updated_at": "2026-10-21T09:13:09+00:00",
+  "artifacts": [
+    {
+      "key": "prediction_contract",
+      "path": "prediction_contract.json",
+      "source_skill": "prediction-contract",
+      "saved_at": "2026-10-21T09:13:09+00:00",
+      "version": 1
+    }
+  ],
+  "gates": {
+    "prediction_contract_approved": true,
+    "dataset_profile_complete": false,
+    "column_profile_complete": false,
+    "workflow_plan_approved": false,
+    "preprocessing_complete": false,
+    "training_complete": false,
+    "onnx_deployment_complete": false,
+    "auto_research_complete": false,
+    "evaluation_complete": false,
+    "explainability_complete": false,
+    "model_development_documentation_complete": false
+  },
+  "sessions": [],
+  "validation_log": [
+    {
+      "at": "2026-10-21T09:13:09+00:00",
+      "action": "begin-skill",
+      "ok": true,
+      "key": null,
+      "skill": "prediction-contract"
+    },
+    {
+      "at": "2026-10-21T09:13:09+00:00",
+      "action": "save-artifact",
+      "ok": true,
+      "key": "prediction_contract",
+      "skill": "prediction-contract"
+    }
+  ],
+  "goal": "Rank card transactions so analysts review the riskiest 1% first.",
+  "dataset_path": "{{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
+  "pending_slug": null,
+  "forked_from": null,
+  "package_version": "0.1.0",
+  "last_claude_session_id": null,
+  "previous_trial_dirs": [],
+  "active_skill": "prediction-contract",
+  "developer_focus": []
+}

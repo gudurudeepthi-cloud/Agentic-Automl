@@ -1,0 +1,8 @@
+{
+  "dataset_id": "synthetic_fraud",
+  "rows": 40133,
+  "columns": 22,
+  "file_size_mb": 4.66,
+  "positive_rate": 0.01057,
+  "smoke_rows": 20000
+}

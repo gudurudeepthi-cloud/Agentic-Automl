@@ -1,0 +1,13 @@
+{
+  "dataset_id": "telco_churn",
+  "samples": [
+    {
+      "name": "smoke",
+      "path": "benchmarks/evals/fixtures/datasets/telco_churn.csv",
+      "rows": 3000,
+      "sha256": "ff4af0ff3d80742c6e853495e6e71c805f0505989da9f2fdacd755ef4ca6c9ec",
+      "seed": 0,
+      "method": "seeded row sample, original order kept (agentic_automl.eval_seeds.make_smoke_csv)"
+    }
+  ]
+}

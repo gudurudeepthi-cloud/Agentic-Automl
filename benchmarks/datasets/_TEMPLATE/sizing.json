@@ -1,0 +1,9 @@
+{
+  "dataset_id": "<id>",
+  "rows": 0,
+  "columns": 0,
+  "file_size_mb": 0,
+  "positive_rate": null,
+  "smoke_rows": 0,
+  "expected_local_runtime_minutes": {"smoke": 1, "full": 10}
+}

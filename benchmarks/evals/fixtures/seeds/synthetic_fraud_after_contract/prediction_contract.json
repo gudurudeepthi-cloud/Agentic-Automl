@@ -1,0 +1,41 @@
+{
+  "task_type": "synthetic_fraud binary prediction",
+  "target_kind": "binary",
+  "business_context": "Rank card transactions so analysts review the riskiest 1% first.",
+  "deployment_intent": "exploratory_baseline",
+  "dataset_path": "{{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
+  "dataset_location": "local",
+  "data_source": "internal",
+  "data_segments": [
+    {
+      "path": "{{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
+      "format": "csv",
+      "file_count": 1,
+      "role": "full"
+    }
+  ],
+  "schema_files": [],
+  "split_strategy": "temporal",
+  "split_ratio": 0.2,
+  "time_column": "event_time",
+  "split_column": null,
+  "split_train_value": null,
+  "split_test_value": null,
+  "target_column": "is_fraud",
+  "target_labels": [
+    0,
+    1
+  ],
+  "entity_id_column": "customer_id",
+  "weight_column": null,
+  "primary_metric": "pr_auc",
+  "report_metrics": [
+    "roc_auc",
+    "precision_at_top_1pct",
+    "recall_at_top_1pct"
+  ],
+  "model_preference": "single_baseline",
+  "model_space": null,
+  "scale_assumption": "local_workstation",
+  "notes": "Seed contract generated from benchmarks/datasets.json entry synthetic_fraud."
+}

@@ -11,7 +11,7 @@ catch: rare positives, a post-outcome leakage column, a constant column, an ID-l
 high-cardinality column, missing values, duplicate rows, repeated customers, and a
 fraud-rate drift over time.
 
-    python scripts/dev/generate_synthetic_fraud.py --rows 250000 --fraud-rate 0.002 --seed 7 --out-dir data
+    python scripts/generate_synthetic_fraud.py --rows 250000 --fraud-rate 0.002 --seed 7 --out-dir data
 """
 
 from __future__ import annotations

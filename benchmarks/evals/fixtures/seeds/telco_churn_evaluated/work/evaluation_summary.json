@@ -1,0 +1,303 @@
+{
+  "model_evaluated": "logistic_regression",
+  "split_evaluated": "test (random_stratified split)",
+  "primary_metric": "roc_auc",
+  "primary_metric_value": 0.8438199261579771,
+  "metrics": {
+    "roc_auc": 0.8438199261579771,
+    "pr_auc": 0.6363022979179755,
+    "log_loss": 0.42500886428737716,
+    "brier": 0.13796518628306878,
+    "roc_auc_ci_low": 0.8097223581897517,
+    "roc_auc_ci_high": 0.8781554178787201
+  },
+  "baseline_comparison": {
+    "trivial_prior": {
+      "roc_auc": 0.5,
+      "note": "constant prediction from train"
+    },
+    "lightgbm": {
+      "roc_auc": 0.836246923249049,
+      "note": "training contender, scored after selection; not used to choose"
+    }
+  },
+  "threshold": null,
+  "per_segment": {
+    "gender": {
+      "Female": {
+        "rows": 300,
+        "positives": 87,
+        "roc_auc": 0.855512384652744
+      },
+      "Male": {
+        "rows": 300,
+        "positives": 77,
+        "roc_auc": 0.8308776425368354
+      }
+    },
+    "Partner": {
+      "No": {
+        "rows": 301,
+        "positives": 109,
+        "roc_auc": 0.7930762614678899
+      },
+      "Yes": {
+        "rows": 299,
+        "positives": 55,
+        "roc_auc": 0.870789865871833
+      }
+    },
+    "Dependents": {
+      "No": {
+        "rows": 404,
+        "positives": 130,
+        "roc_auc": 0.8172515440763616
+      },
+      "Yes": {
+        "rows": 196,
+        "positives": 34,
+        "roc_auc": 0.8714596949891068
+      }
+    },
+    "PhoneService": {
+      "No": {
+        "rows": 55,
+        "positives": 9,
+        "roc_auc": 0.855072463768116
+      },
+      "Yes": {
+        "rows": 545,
+        "positives": 155,
+        "roc_auc": 0.8420099255583127
+      }
+    },
+    "MultipleLines": {
+      "No": {
+        "rows": 279,
+        "positives": 77,
+        "roc_auc": 0.8326154043975826
+      },
+      "No phone service": {
+        "rows": 55,
+        "positives": 9,
+        "roc_auc": 0.855072463768116
+      },
+      "Yes": {
+        "rows": 266,
+        "positives": 78,
+        "roc_auc": 0.851950354609929
+      }
+    },
+    "InternetService": {
+      "DSL": {
+        "rows": 201,
+        "positives": 40,
+        "roc_auc": 0.8069875776397515
+      },
+      "Fiber optic": {
+        "rows": 266,
+        "positives": 117,
+        "roc_auc": 0.7708082372511902
+      },
+      "No": {
+        "rows": 133,
+        "positives": 7,
+        "roc_auc": 0.8843537414965987
+      }
+    },
+    "OnlineSecurity": {
+      "No": {
+        "rows": 289,
+        "positives": 130,
+        "roc_auc": 0.7556119980648283
+      },
+      "No internet service": {
+        "rows": 133,
+        "positives": 7,
+        "roc_auc": 0.8843537414965987
+      },
+      "Yes": {
+        "rows": 178,
+        "positives": 27,
+        "roc_auc": 0.7760608290409615
+      }
+    },
+    "OnlineBackup": {
+      "No": {
+        "rows": 255,
+        "positives": 107,
+        "roc_auc": 0.7724488507198788
+      },
+      "No internet service": {
+        "rows": 133,
+        "positives": 7,
+        "roc_auc": 0.8843537414965987
+      },
+      "Yes": {
+        "rows": 212,
+        "positives": 50,
+        "roc_auc": 0.7966666666666666
+      }
+    },
+    "DeviceProtection": {
+      "No": {
+        "rows": 260,
+        "positives": 114,
+        "roc_auc": 0.7372927180966115
+      },
+      "No internet service": {
+        "rows": 133,
+        "positives": 7,
+        "roc_auc": 0.8843537414965987
+      },
+      "Yes": {
+        "rows": 207,
+        "positives": 43,
+        "roc_auc": 0.8648610323312536
+      }
+    },
+    "TechSupport": {
+      "No": {
+        "rows": 290,
+        "positives": 126,
+        "roc_auc": 0.7729142469996129
+      },
+      "No internet service": {
+        "rows": 133,
+        "positives": 7,
+        "roc_auc": 0.8843537414965987
+      },
+      "Yes": {
+        "rows": 177,
+        "positives": 31,
+        "roc_auc": 0.7680070702607159
+      }
+    },
+    "StreamingTV": {
+      "No": {
+        "rows": 232,
+        "positives": 78,
+        "roc_auc": 0.7757659007659008
+      },
+      "No internet service": {
+        "rows": 133,
+        "positives": 7,
+        "roc_auc": 0.8843537414965987
+      },
+      "Yes": {
+        "rows": 235,
+        "positives": 79,
+        "roc_auc": 0.8420155793573515
+      }
+    },
+    "StreamingMovies": {
+      "No": {
+        "rows": 240,
+        "positives": 82,
+        "roc_auc": 0.771727384995369
+      },
+      "No internet service": {
+        "rows": 133,
+        "positives": 7,
+        "roc_auc": 0.8843537414965987
+      },
+      "Yes": {
+        "rows": 227,
+        "positives": 75,
+        "roc_auc": 0.8411403508771929
+      }
+    },
+    "Contract": {
+      "Month-to-month": {
+        "rows": 313,
+        "positives": 146,
+        "roc_auc": 0.7297801656960053
+      },
+      "One year": {
+        "rows": 134,
+        "positives": 12,
+        "roc_auc": 0.6837431693989071
+      },
+      "Two year": {
+        "rows": 153,
+        "positives": 6,
+        "roc_auc": 0.746031746031746
+      }
+    },
+    "PaperlessBilling": {
+      "No": {
+        "rows": 256,
+        "positives": 45,
+        "roc_auc": 0.8822538177988415
+      },
+      "Yes": {
+        "rows": 344,
+        "positives": 119,
+        "roc_auc": 0.8046498599439775
+      }
+    },
+    "PaymentMethod": {
+      "Bank transfer (automatic)": {
+        "rows": 134,
+        "positives": 26,
+        "roc_auc": 0.8287037037037037
+      },
+      "Credit card (automatic)": {
+        "rows": 135,
+        "positives": 22,
+        "roc_auc": 0.8390989541432019
+      },
+      "Electronic check": {
+        "rows": 199,
+        "positives": 93,
+        "roc_auc": 0.7501014404544531
+      },
+      "Mailed check": {
+        "rows": 132,
+        "positives": 23,
+        "roc_auc": 0.8560031910650179
+      }
+    }
+  },
+  "trust_checks": [
+    {
+      "name": "leakage",
+      "passed": true,
+      "detail": "Leakage suspects none; overlap with the 16 model features: none. Top permutation feature: Contract."
+    },
+    {
+      "name": "too_good_to_be_true",
+      "passed": true,
+      "detail": "roc_auc 0.8438; best single feature tenure alone scores 0.7391; Contract carries 36% of permutation importance."
+    },
+    {
+      "name": "cv_vs_test_gap",
+      "passed": true,
+      "detail": "Test 0.8438 vs CV 0.8499 +/- 0.0131 (gap -0.0060); tolerance max(2 x CV std, test 95% CI half-width 0.0342) = 0.0342."
+    },
+    {
+      "name": "split_integrity",
+      "passed": true,
+      "detail": "Test rows 600 (profile 600), positives 164 (profile 164)"
+    },
+    {
+      "name": "test_sample_size",
+      "passed": true,
+      "detail": "164 test positives; roc_auc 95% bootstrap CI [0.8097, 0.8782]"
+    }
+  ],
+  "narrative": "The logistic_regression model scores roc_auc 0.844 on the held-out test data, against 0.500 for a constant prediction. All trust checks passed. The test score is uncertain by about +/-0.034 (95% bootstrap interval). ",
+  "plots": [
+    "outputs/report/evaluation_curves.png",
+    "outputs/report/feature_importance.png"
+  ],
+  "findings": [
+    "Test roc_auc 0.8438 (95% CI 0.8097-0.8782); CV 0.8499 +/- 0.0131.",
+    "Trivial baseline (trivial_prior) roc_auc: 0.5000.",
+    "lightgbm roc_auc: 0.8362 (training contender, scored after selection; not used to choose).",
+    "All trust checks passed.",
+    "Top driver on CV: Contract (36% of permutation importance)."
+  ],
+  "evaluation_script": "work/evaluate.py",
+  "notes": "Model: outputs/model/model.joblib. Threshold rule: none."
+}

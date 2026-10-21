@@ -1,47 +1,53 @@
-# Step templates
+# scripts/
 
-Tested starting points for each step's script. They come from a full fraud trial and
-are generalized to work from the contract and plan. Don't write these steps from
-scratch. Copy the template you need into `work/`, adapt it to the trial, and run it:
+Contributor tooling: evals, benchmarks, seeds and releases. None of it reaches a trial.
+The step templates the agent copies are in `steps/` and are the only part shipped into
+trials (as `.claude/scripts/`). Most scripts are thin wrappers over `src/agentic_automl/` modules.
+
+Run with a Python that has this repo's dependencies, e.g. `.venv\Scripts\python.exe scripts/<name>`.
+Seed generation also needs the trial runtime Python with the ML stack, which it calls for you.
+
+| Script | What it does | Backed by |
+|---|---|---|
+| **Evals** | | |
+| `run_agent_evals.py` | Run scenarios by tier: `deterministic` (free), `auth` (preflight), `component` / `e2e` / `real` (paid, need `--trust-runtime`) | `eval_harness.main` |
+| `recommend_evals.py` | Which tiers a diff needs (`--base origin/main --head HEAD`); recommend-only | `eval_harness.recommend_evals_cli` |
+| **Benchmarks** | | |
+| `audit_benchmark_datasets.py` | Readiness of every `benchmarks/datasets.json` entry (`--json`, `--strict`) | `benchmark_readiness.main` |
+| `inspect_benchmark_dataset.py` | One dataset's entry, readiness, fixtures, scenarios, seeds (`--id`) | `benchmark_readiness` |
+| `download_datasets.py` | Fetch/generate datasets into `data/benchmarks/<id>/` (gitignored) | registry `access` |
+| `prepare_benchmark_samples.py` | Validate `samples.json` manifests (rows, sha256); `--write` rebuilds them | `benchmark_samples.schema.json` |
+| **Seeds and fixtures** | | |
+| `generate_synthetic_benchmarks.py` | Deterministic CSV from a JSON config (stdlib) | `synthetic_benchmarks` |
+| `generate_dataset_seeds.py` | Smoke CSV + seed trials `after_contract` to `evaluated`, by running the step templates through the validator | `eval_seeds` |
+| `generate_seed_profiles.py` | Same, stopped after profiling (cheap) | `eval_seeds` |
+| `generate_training_seed.py` | Same, stopped after training | `eval_seeds` |
+| `generate_answer_bank.py` | Scenario `answer_bank` from the registry + seeded contract (`--print` to preview) | `eval_seed_roles` |
+| `generate_synthetic_fraud.py` | The synthetic fraud dataset (writes an answer key; never give it to a trial) | stdlib |
+| **Release** | | |
+| `prepare_release.py` | Bump the version in `pyproject.toml` and `__init__.py` (`patch`/`minor`/`major`/`final`, `--pre rc`, `--dry-run`) | |
+| `inspect_tool_distribution.py` | Check a wheel: required members present, nothing release-blocking, final version | |
+| `check_tool_distribution.sh` | Build wheel + inspect + sandboxed `uv tool install` smoke | |
+| `publish_artifactory.sh` | Build + release check + `twine upload` to Artifactory (`ARTIFACTORY_URL/USER/TOKEN` or `--repository`; `--dry-run`) | |
+| **Trials** | | |
+| `summarize_trials.py` | One row per trial | `trial_summary.main` |
+
+Typical loops:
 
 ```
-cp .claude/scripts/aaml_common.py work/
-cp .claude/scripts/<step>.py work/
-<runtime python> work/<step>.py --help
+# dataset onboarding
+python scripts/download_datasets.py --id telco_churn
+python scripts/generate_dataset_seeds.py --dataset telco_churn
+python scripts/prepare_benchmark_samples.py --write --id telco_churn
+python scripts/generate_answer_bank.py --dataset telco_churn
+python scripts/audit_benchmark_datasets.py
+
+# before a PR
+python scripts/recommend_evals.py --base origin/main --head HEAD
+python scripts/run_agent_evals.py --tier deterministic --report-md eval-report.md
+
+# release
+python scripts/prepare_release.py patch
+scripts/check_tool_distribution.sh --release-ready
+scripts/publish_artifactory.sh --dry-run
 ```
-
-Run scripts from the trial root. `aaml_common.py` must sit next to them in `work/`.
-
-In the repo these live in `scripts/`. The launcher copies them into every trial
-as `.claude/scripts/` on new and resume. `scripts/dev/` holds contributor tools,
-such as the synthetic-data generator, and is never copied into a trial.
-
-| Skill | Template | Reads | Writes |
-|---|---|---|---|
-| data-profiling | `profile_dataset.py` | contract, data | `work/dataset_profile.json`, `work/column_profile.json` |
-| workflow-planning | `features_template.py` → `work/features.py` (optional) | contract | engineered features (point-in-time) |
-| workflow-planning | `model_family_screen.py` | contract, profiles, `work/features.py` | `work/model_family_advice.json` |
-| data-preprocessing | `preprocess.py` | contract, plan, profiles, `work/features.py` | parquet, `outputs/pipeline/preprocessor.joblib`, `work/preprocessing_summary.json` |
-| training | `feature_selection.py` (`--smoke` first) | preprocessed train, plan | `outputs/model/feature_selection.json` |
-| training | `train.py` | `feature_selection.json` | models, `cv_predictions.parquet`, `work/training_summary.json` |
-| evaluation | `evaluate.py` | test parquet, models, profiles | plots, `work/evaluation_summary.json` |
-
-What `aaml_common.py` provides:
-- **One split** (`split`). Profiling, the screen and preprocessing all get the same rows: exact duplicates are dropped and `work/features.py` runs on the time-sorted table before the split.
-- **One set of CV folds** (`cv_folds`):
-  - temporal contract: expanding-window `TimeSeriesSplit`
-  - repeated `entity_id_column`: group folds
-  - otherwise stratified or plain K-fold
-- **One encoder** (`build_encoder`). The family screen and preprocessing use the same median+indicator and one-hot encoding.
-- **Metrics** (`score`): `pr_auc`, `roc_auc`, `log_loss`, `brier`, `accuracy`, `f1`, `f1_macro`, `balanced_accuracy`, `precision_at_top_<k>pct` / `recall_at_top_<k>pct` (e.g. `precision_at_top_0_5pct`), `rmse`, `mse`, `mae`, `r2`, `mape`. Lower-is-better metrics are handled. Anything else: add it to `score`.
-- **Model families** (`make_model`): `logistic_regression`, `ridge`, `random_forest`, `extra_trees`, `hist_gradient_boosting`, `lightgbm`, `xgboost`. Linear models log-transform and scale inside their own pipeline, so each CV fold fits its own.
-
-Rules the templates enforce (keep them when you adapt):
-- Test is read only by `evaluate.py`, and only once. A re-run needs `--rerun-reason`, which is recorded.
-- Thresholds come from CV predictions, never from test.
-- Leakage suspects must be in `drop_columns`, and preprocessing fails otherwise.
-- Every trust-check number is computed, including the test-metric bootstrap CI. Don't paste in numbers from elsewhere.
-- Engineered features must be point-in-time (see `features_template.py`).
-
-Adapt freely (a different encoder, extra families, custom segments, domain checks),
-but say what you changed in the artifact's `notes`.

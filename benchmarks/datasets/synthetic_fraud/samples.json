@@ -1,0 +1,13 @@
+{
+  "dataset_id": "synthetic_fraud",
+  "samples": [
+    {
+      "name": "smoke",
+      "path": "benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
+      "rows": 20000,
+      "sha256": "ce2984afcc19e48e23a7b4e632e7af2ee33e02c58ea66cf80d6459e7d99106e6",
+      "seed": 0,
+      "method": "seeded row sample, original order kept (agentic_automl.eval_seeds.make_smoke_csv)"
+    }
+  ]
+}

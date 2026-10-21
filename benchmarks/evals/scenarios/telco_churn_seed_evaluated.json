@@ -1,0 +1,117 @@
+{
+  "id": "telco_churn_seed_evaluated",
+  "dataset_id": "telco_churn",
+  "data_size": "smoke",
+  "answer_bank": [
+    {
+      "match": "target column",
+      "answer": "The target column is Churn (positive class 'Yes')."
+    },
+    {
+      "match": "dataset path",
+      "answer": "Use {{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/telco_churn.csv."
+    },
+    {
+      "match": "business context",
+      "answer": "Score customers by churn risk for a retention campaign."
+    },
+    {
+      "match": "split",
+      "answer": "Use a random_stratified split with 20% held out for test."
+    },
+    {
+      "match": "metric",
+      "answer": "Optimise roc_auc; also report pr_auc, log_loss."
+    },
+    {
+      "match": "model preference",
+      "answer": "A single baseline model is fine (single_baseline)."
+    },
+    {
+      "match": "deployment",
+      "answer": "Exploratory baseline; no production parity needed (open_source engine is fine)."
+    },
+    {
+      "match": "approve",
+      "answer": "Yes, approved. Proceed."
+    },
+    {
+      "match": "compute",
+      "answer": "Yes, go ahead; keep each run under 10 minutes."
+    }
+  ],
+  "dataset_path": "benchmarks/evals/fixtures/datasets/telco_churn.csv",
+  "suite": "seeds",
+  "tiers": [
+    "deterministic"
+  ],
+  "entry_skill": "evaluation",
+  "seed": {
+    "kind": "fixture",
+    "name": "telco_churn_evaluated"
+  },
+  "initial_prompt": "Deterministic check of the committed evaluated seed (no agent run).",
+  "limits": {
+    "max_turns": 1,
+    "max_budget_usd": 0,
+    "timeout_seconds": 60
+  },
+  "expected_artifacts": [
+    "prediction_contract",
+    "dataset_profile",
+    "column_profile",
+    "workflow_plan",
+    "preprocessing_summary",
+    "training_summary",
+    "evaluation_summary"
+  ],
+  "invariants": [
+    {
+      "type": "metric_band",
+      "name": "test_roc_auc_in_band",
+      "artifact": "evaluation_summary",
+      "metric": "primary_metric_value",
+      "min": 0.7,
+      "max": 0.92
+    },
+    {
+      "type": "file_contains",
+      "name": "leakage_check_passed",
+      "path": "outputs/report/evaluation_summary.json",
+      "patterns": [
+        "\"name\": \"leakage\",\\s*\"passed\": true"
+      ]
+    },
+    {
+      "type": "file_contains",
+      "name": "customerID_dropped",
+      "path": "state/workflow_plan.json",
+      "patterns": [
+        "\"customerID\""
+      ]
+    },
+    {
+      "type": "file_contains",
+      "name": "customerID_is_id",
+      "path": "column_profile.json",
+      "patterns": [
+        "\"name\": \"customerID\",[^}]*\"role\": \"id\""
+      ]
+    },
+    {
+      "type": "file_contains",
+      "name": "Churn_is_target",
+      "path": "column_profile.json",
+      "patterns": [
+        "\"name\": \"Churn\",[^}]*\"role\": \"target\""
+      ]
+    },
+    {
+      "type": "max_validation_failures",
+      "max_count": 0
+    }
+  ],
+  "environment": {
+    "requires": []
+  }
+}

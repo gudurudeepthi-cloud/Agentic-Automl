@@ -1,0 +1,220 @@
+{
+  "model_evaluated": "logistic_regression",
+  "split_evaluated": "test (temporal split)",
+  "primary_metric": "pr_auc",
+  "primary_metric_value": 0.5941349592102494,
+  "metrics": {
+    "pr_auc": 0.5941349592102494,
+    "roc_auc": 0.9829768067475767,
+    "precision_at_top_1pct": 0.5641025641025641,
+    "recall_at_top_1pct": 0.5365853658536586,
+    "brier": 0.0061414178773194685,
+    "log_loss": 0.023709357043131336,
+    "pr_auc_ci_low": 0.4690740494946329,
+    "pr_auc_ci_high": 0.736666856521874
+  },
+  "baseline_comparison": {
+    "trivial_prior": {
+      "pr_auc": 0.010265398097145719,
+      "note": "constant prediction from train"
+    },
+    "lightgbm": {
+      "pr_auc": 0.5326380591121014,
+      "note": "training contender, scored after selection; not used to choose"
+    }
+  },
+  "threshold": null,
+  "per_segment": {
+    "merchant_category": {
+      "cash_withdrawal": {
+        "rows": 291,
+        "positives": 6,
+        "pr_auc": 0.612118437118437
+      },
+      "digital_goods": {
+        "rows": 222,
+        "positives": 1,
+        "pr_auc": 1.0
+      },
+      "electronics": {
+        "rows": 264,
+        "positives": 15,
+        "pr_auc": 0.5824871661028318
+      },
+      "fashion": {
+        "rows": 401,
+        "positives": 1,
+        "pr_auc": 0.5
+      },
+      "fuel": {
+        "rows": 363,
+        "positives": 2,
+        "pr_auc": 0.2777777777777778
+      },
+      "gift_cards": {
+        "rows": 118,
+        "positives": 4,
+        "pr_auc": 0.7708333333333333
+      },
+      "grocery": {
+        "rows": 906,
+        "positives": 1,
+        "pr_auc": 1.0
+      },
+      "pharmacy": {
+        "rows": 299,
+        "positives": 0,
+        "pr_auc": null
+      },
+      "restaurants": {
+        "rows": 553,
+        "positives": 1,
+        "pr_auc": 1.0
+      },
+      "travel": {
+        "rows": 212,
+        "positives": 10,
+        "pr_auc": 0.6292063492063492
+      },
+      "utilities": {
+        "rows": 365,
+        "positives": 0,
+        "pr_auc": null
+      }
+    },
+    "channel": {
+      "atm": {
+        "rows": 291,
+        "positives": 6,
+        "pr_auc": 0.612118437118437
+      },
+      "online": {
+        "rows": 1555,
+        "positives": 27,
+        "pr_auc": 0.6205720444164143
+      },
+      "pos": {
+        "rows": 2148,
+        "positives": 8,
+        "pr_auc": 0.5139078724305997
+      }
+    },
+    "country": {
+      "BR": {
+        "rows": 4,
+        "positives": 0,
+        "pr_auc": null
+      },
+      "CA": {
+        "rows": 9,
+        "positives": 0,
+        "pr_auc": null
+      },
+      "GB": {
+        "rows": 15,
+        "positives": 0,
+        "pr_auc": null
+      },
+      "IN": {
+        "rows": 4,
+        "positives": 0,
+        "pr_auc": null
+      },
+      "MX": {
+        "rows": 10,
+        "positives": 0,
+        "pr_auc": null
+      },
+      "NG": {
+        "rows": 4,
+        "positives": 0,
+        "pr_auc": null
+      },
+      "RU": {
+        "rows": 3,
+        "positives": 0,
+        "pr_auc": null
+      },
+      "US": {
+        "rows": 3945,
+        "positives": 41,
+        "pr_auc": 0.5970471516034958
+      }
+    },
+    "device_type": {
+      "android": {
+        "rows": 326,
+        "positives": 8,
+        "pr_auc": 0.6088688680600445
+      },
+      "ios": {
+        "rows": 417,
+        "positives": 5,
+        "pr_auc": 0.5365563065643257
+      },
+      "web_desktop": {
+        "rows": 441,
+        "positives": 6,
+        "pr_auc": 0.7893790849673202
+      },
+      "web_mobile": {
+        "rows": 371,
+        "positives": 8,
+        "pr_auc": 0.7511363636363637
+      }
+    },
+    "month": {
+      "2025-05": {
+        "rows": 735,
+        "positives": 6,
+        "pr_auc": 0.20292896645837824
+      },
+      "2025-06": {
+        "rows": 3259,
+        "positives": 35,
+        "pr_auc": 0.6736410523910664
+      }
+    }
+  },
+  "trust_checks": [
+    {
+      "name": "leakage",
+      "passed": true,
+      "detail": "Leakage suspects ['chargeback_flag']; overlap with the 12 model features: none. Top permutation feature: failed_logins_7d."
+    },
+    {
+      "name": "too_good_to_be_true",
+      "passed": true,
+      "detail": "pr_auc 0.5941 vs base rate 0.0103 (58x); best single feature amount_to_avg_ratio alone scores 0.1611; failed_logins_7d carries 39% of permutation importance."
+    },
+    {
+      "name": "cv_vs_test_gap",
+      "passed": true,
+      "detail": "Test 0.5941 vs CV 0.5645 +/- 0.0614 (gap +0.0296); tolerance max(2 x CV std, test 95% CI half-width 0.1338) = 0.1338."
+    },
+    {
+      "name": "split_integrity",
+      "passed": true,
+      "detail": "Test rows 3994 (profile 3994), positives 41 (profile 41)"
+    },
+    {
+      "name": "test_sample_size",
+      "passed": false,
+      "detail": "41 test positives; pr_auc 95% bootstrap CI [0.4691, 0.7367]"
+    }
+  ],
+  "narrative": "The logistic_regression model scores pr_auc 0.594 on the held-out test data, against 0.010 for a constant prediction. Checks needing attention: test_sample_size. The test score is uncertain by about +/-0.134 (95% bootstrap interval). ",
+  "plots": [
+    "outputs/report/evaluation_curves.png",
+    "outputs/report/feature_importance.png"
+  ],
+  "findings": [
+    "Test pr_auc 0.5941 (95% CI 0.4691-0.7367); CV 0.5645 +/- 0.0614.",
+    "Trivial baseline (trivial_prior) pr_auc: 0.0103.",
+    "lightgbm pr_auc: 0.5326 (training contender, scored after selection; not used to choose).",
+    "Trust checks failed: ['test_sample_size'].",
+    "Top driver on CV: failed_logins_7d (39% of permutation importance)."
+  ],
+  "evaluation_script": "work/evaluate.py",
+  "notes": "Model: outputs/model/model.joblib. Threshold rule: none."
+}

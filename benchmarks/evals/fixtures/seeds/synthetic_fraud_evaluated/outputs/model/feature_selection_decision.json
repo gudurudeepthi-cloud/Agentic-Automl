@@ -1,0 +1,7 @@
+{
+  "winner": "logistic_regression",
+  "steps": [
+    "lightgbm vs logistic_regression: -0.0510 +/- 0.1042 per fold [-0.2142, 0.0088, -0.0252, 0.0888, -0.113] -> keep logistic_regression"
+  ],
+  "rationale": "Paired per-fold comparison, simplest first; a more complex family must beat the incumbent by more than the std of the per-fold gap. lightgbm vs logistic_regression: -0.0510 +/- 0.1042 per fold [-0.2142, 0.0088, -0.0252, 0.0888, -0.113] -> keep logistic_regression. Selected logistic_regression."
+}

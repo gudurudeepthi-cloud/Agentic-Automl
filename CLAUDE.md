@@ -10,9 +10,11 @@ each trial workspace live in `.claude/CLAUDE.md`.
 - `.claude/` is the runtime template copied into every trial. `.claude/hooks.json` holds the PreToolUse guards. Claude Code doesn't read that file itself; the launcher merges it into each trial's `settings.json`, which keeps the guards out of sessions in this repo.
 - `ml_domain` enums in the contract/plan schemas must match `.claude/skills/domains/registry.json` (a test enforces this).
 - The Python never trains models. ML logic belongs in `.claude/skills/*/SKILL.md`
-  and in the step templates in `scripts/`. The launcher copies them into every trial as
+  and in the step templates in `scripts/steps/`. The launcher copies them into every trial as
   `.claude/scripts/`, and the agent copies them from there into `work/`. They run under the
   trial runtime Python, not the launcher; `tests/test_step_templates.py` runs them end to
-  end when sklearn is available. Contributor tools go in `scripts/dev/`, which never
-  reaches a trial (the synthetic-data generator reveals the answer key).
+  end when sklearn is available.
+- The rest of `scripts/` is contributor tooling (evals, benchmarks, seeds, release; see
+  `scripts/README.md`) and never reaches a trial: the synthetic-data generator reveals the
+  answer key. Most are thin wrappers over `src/agentic_automl/` modules.
 - Run `pytest` before committing.

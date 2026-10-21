@@ -1,0 +1,49 @@
+{
+  "dataset_path": "{{REPO_ROOT}}/benchmarks/evals/fixtures/datasets/telco_churn.csv",
+  "n_rows": 3000,
+  "n_columns": 21,
+  "target_column": "Churn",
+  "target_summary": {
+    "counts": {
+      "No": 2180,
+      "Yes": 820
+    },
+    "positive_rate": 0.27333
+  },
+  "split_summary": {
+    "strategy": "random_stratified",
+    "after_dedup": true,
+    "train": {
+      "rows": 2400,
+      "positives": 656,
+      "positive_rate": 0.27333
+    },
+    "test": {
+      "rows": 600,
+      "positives": 164,
+      "positive_rate": 0.27333
+    }
+  },
+  "missing_value_summary": {},
+  "duplicate_rows": 0,
+  "data_quality_flags": [
+    {
+      "severity": "warning",
+      "columns": [
+        "customerID"
+      ],
+      "message": "customerID is unique per row (3000 values): an identifier, not a feature"
+    },
+    {
+      "severity": "warning",
+      "columns": [
+        "TotalCharges"
+      ],
+      "message": "TotalCharges is unique per row (2874 values): an identifier, not a feature"
+    }
+  ],
+  "profiling_script": "work/profile_dataset.py",
+  "segment_summary": {},
+  "generated_at": "2026-10-21T12:04:40+00:00",
+  "notes": "n_rows counts raw rows (3000); target and split counts are after removing 0 exact duplicates. Leakage probe on 2400 train rows (seed 42)."
+}

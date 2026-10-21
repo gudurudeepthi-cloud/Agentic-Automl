@@ -1,0 +1,476 @@
+{
+  "rule": "mean",
+  "primary_metric": "pr_auc",
+  "cv_strategy": "5-fold expanding-window TimeSeriesSplit on time-sorted train (entities can appear on both sides of a fold boundary, as they do across train/test); permutation repeats=3, encoded columns permuted jointly",
+  "stage0_plan_removed": {
+    "transaction_id": "id (row_identifier)",
+    "customer_id": "id (entity_identifier)",
+    "event_time": "time (datetime)",
+    "currency": "drop (constant)",
+    "merchant_id": "feature (high_cardinality_categorical)",
+    "chargeback_flag": "leakage_suspect (boolean)"
+  },
+  "redundancy_filter": {},
+  "candidate_pool": [
+    "amount",
+    "merchant_category",
+    "channel",
+    "card_present",
+    "country",
+    "is_foreign",
+    "hour_of_day",
+    "customer_age",
+    "account_tenure_days",
+    "txn_count_24h",
+    "avg_amount_30d",
+    "amount_to_avg_ratio",
+    "distance_from_home_km",
+    "device_type",
+    "failed_logins_7d"
+  ],
+  "families": {
+    "logistic_regression": {
+      "params": {
+        "C": 0.1
+      },
+      "tuning": [
+        {
+          "params": {
+            "C": 0.1
+          },
+          "score": 0.5628705115733685,
+          "score_std": 0.06757430727808607
+        },
+        {
+          "params": {
+            "C": 1.0
+          },
+          "score": 0.5535513620914834,
+          "score_std": 0.06985105847710696
+        }
+      ],
+      "full": {
+        "score": 0.5628705115733685,
+        "score_std": 0.06757430727808607,
+        "fold_scores": [
+          0.57783,
+          0.52968,
+          0.65138,
+          0.45289,
+          0.60257
+        ],
+        "other_metrics": {
+          "roc_auc": 0.9793027920944211,
+          "precision_at_top_1pct": 0.5538461538461539,
+          "recall_at_top_1pct": 0.4709788786482335
+        },
+        "seconds": 2.5,
+        "permutation_importance": {
+          "amount": {
+            "mean": 0.021897281087977984,
+            "per_fold": [
+              0.00687,
+              0.03361,
+              0.0003,
+              0.06058,
+              0.00813
+            ]
+          },
+          "merchant_category": {
+            "mean": 0.10873215316226328,
+            "per_fold": [
+              0.07119,
+              0.04029,
+              0.19409,
+              0.09026,
+              0.14784
+            ]
+          },
+          "channel": {
+            "mean": 0.006698307553332529,
+            "per_fold": [
+              0.00344,
+              0.01947,
+              -0.00749,
+              0.00605,
+              0.01202
+            ]
+          },
+          "card_present": {
+            "mean": -0.003591251192499896,
+            "per_fold": [
+              -0.00969,
+              0.00321,
+              0.00082,
+              -0.0022,
+              -0.0101
+            ]
+          },
+          "country": {
+            "mean": 0.0017142239794658196,
+            "per_fold": [
+              0.00193,
+              0.01047,
+              0.0015,
+              -0.01825,
+              0.01293
+            ]
+          },
+          "is_foreign": {
+            "mean": -0.0006951977150052578,
+            "per_fold": [
+              0.00333,
+              -0.00584,
+              -0.00012,
+              -0.00096,
+              0.00013
+            ]
+          },
+          "hour_of_day": {
+            "mean": 0.01282993687653423,
+            "per_fold": [
+              0.00054,
+              0.01812,
+              0.01626,
+              0.01415,
+              0.01509
+            ]
+          },
+          "customer_age": {
+            "mean": 0.0028755303343033075,
+            "per_fold": [
+              0.00491,
+              -0.00107,
+              0.00325,
+              0.00723,
+              5e-05
+            ]
+          },
+          "account_tenure_days": {
+            "mean": 0.00997541702008158,
+            "per_fold": [
+              0.01652,
+              -0.00186,
+              0.01924,
+              0.01151,
+              0.00447
+            ]
+          },
+          "txn_count_24h": {
+            "mean": 0.21331000931494795,
+            "per_fold": [
+              0.19271,
+              0.27736,
+              0.18798,
+              0.19531,
+              0.21318
+            ]
+          },
+          "avg_amount_30d": {
+            "mean": 0.008387446839587451,
+            "per_fold": [
+              -0.00406,
+              0.01115,
+              0.02063,
+              0.00728,
+              0.00692
+            ]
+          },
+          "amount_to_avg_ratio": {
+            "mean": 0.21118709025441867,
+            "per_fold": [
+              0.16512,
+              0.16971,
+              0.24704,
+              0.23332,
+              0.24074
+            ]
+          },
+          "distance_from_home_km": {
+            "mean": -0.0017112316088100227,
+            "per_fold": [
+              -0.00611,
+              -0.00306,
+              0.00857,
+              -0.00221,
+              -0.00576
+            ]
+          },
+          "device_type": {
+            "mean": 0.005215923290536048,
+            "per_fold": [
+              -0.01162,
+              0.02531,
+              0.02341,
+              0.00085,
+              -0.01188
+            ]
+          },
+          "failed_logins_7d": {
+            "mean": 0.38424866474169195,
+            "per_fold": [
+              0.45425,
+              0.39979,
+              0.39432,
+              0.32509,
+              0.34779
+            ]
+          }
+        }
+      },
+      "removed": [
+        "card_present",
+        "is_foreign",
+        "distance_from_home_km"
+      ],
+      "reduced": {
+        "score": 0.5645246486558102,
+        "score_std": 0.0613772114111149,
+        "fold_scores": [
+          0.58137,
+          0.53583,
+          0.64075,
+          0.46217,
+          0.6025
+        ],
+        "other_metrics": {
+          "roc_auc": 0.9799942920607208,
+          "precision_at_top_1pct": 0.5615384615384615,
+          "recall_at_top_1pct": 0.4774304915514593
+        },
+        "seconds": 0.3
+      },
+      "use_reduced": true,
+      "features": [
+        "amount",
+        "merchant_category",
+        "channel",
+        "country",
+        "hour_of_day",
+        "customer_age",
+        "account_tenure_days",
+        "txn_count_24h",
+        "avg_amount_30d",
+        "amount_to_avg_ratio",
+        "device_type",
+        "failed_logins_7d"
+      ]
+    },
+    "lightgbm": {
+      "params": {
+        "n_estimators": 200,
+        "learning_rate": 0.05,
+        "num_leaves": 15,
+        "min_child_samples": 50
+      },
+      "tuning": null,
+      "full": {
+        "score": 0.4829096590329162,
+        "score_std": 0.07096495466595508,
+        "fold_scores": [
+          0.35319,
+          0.49806,
+          0.57084,
+          0.49195,
+          0.50052
+        ],
+        "other_metrics": {
+          "roc_auc": 0.9708325535252541,
+          "precision_at_top_1pct": 0.5,
+          "recall_at_top_1pct": 0.42547734254992325
+        },
+        "seconds": 5.6,
+        "permutation_importance": {
+          "amount": {
+            "mean": 0.014307625504879115,
+            "per_fold": [
+              0.06912,
+              0.00586,
+              -0.04485,
+              0.03749,
+              0.00391
+            ]
+          },
+          "merchant_category": {
+            "mean": 0.03090257158142647,
+            "per_fold": [
+              -0.00055,
+              0.00274,
+              0.0881,
+              0.03168,
+              0.03254
+            ]
+          },
+          "channel": {
+            "mean": 0.04309414487783693,
+            "per_fold": [
+              0.03546,
+              0.10495,
+              -0.02657,
+              0.05891,
+              0.04272
+            ]
+          },
+          "card_present": {
+            "mean": -0.005081537202815856,
+            "per_fold": [
+              0.00428,
+              0.00277,
+              -0.02716,
+              -0.0032,
+              -0.0021
+            ]
+          },
+          "country": {
+            "mean": 0.0,
+            "per_fold": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "is_foreign": {
+            "mean": 0.0,
+            "per_fold": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "hour_of_day": {
+            "mean": 0.03115001162939865,
+            "per_fold": [
+              0.0309,
+              0.02474,
+              0.04162,
+              0.04608,
+              0.01241
+            ]
+          },
+          "customer_age": {
+            "mean": -0.0006107722747372554,
+            "per_fold": [
+              -0.00157,
+              0.00353,
+              0.00522,
+              -0.00052,
+              -0.00971
+            ]
+          },
+          "account_tenure_days": {
+            "mean": -0.0006495597819774206,
+            "per_fold": [
+              -0.03699,
+              0.00832,
+              -0.00255,
+              0.0417,
+              -0.01373
+            ]
+          },
+          "txn_count_24h": {
+            "mean": 0.21776370513580567,
+            "per_fold": [
+              0.12784,
+              0.24649,
+              0.24099,
+              0.20616,
+              0.26734
+            ]
+          },
+          "avg_amount_30d": {
+            "mean": 0.00013086219100364466,
+            "per_fold": [
+              0.00365,
+              0.01047,
+              -0.0094,
+              0.00369,
+              -0.00775
+            ]
+          },
+          "amount_to_avg_ratio": {
+            "mean": 0.20440594260335598,
+            "per_fold": [
+              0.13238,
+              0.06696,
+              0.25462,
+              0.30882,
+              0.25925
+            ]
+          },
+          "distance_from_home_km": {
+            "mean": -0.002259273883024878,
+            "per_fold": [
+              0.03509,
+              -0.01566,
+              -0.01172,
+              -0.01144,
+              -0.00756
+            ]
+          },
+          "device_type": {
+            "mean": -0.000974739956395965,
+            "per_fold": [
+              0.00488,
+              0.00655,
+              -0.01998,
+              -0.00806,
+              0.01173
+            ]
+          },
+          "failed_logins_7d": {
+            "mean": 0.2612588406956721,
+            "per_fold": [
+              0.19617,
+              0.29576,
+              0.28242,
+              0.21564,
+              0.3163
+            ]
+          }
+        }
+      },
+      "removed": [
+        "card_present",
+        "country",
+        "is_foreign",
+        "customer_age",
+        "account_tenure_days",
+        "distance_from_home_km",
+        "device_type"
+      ],
+      "reduced": {
+        "score": 0.5135500524484422,
+        "score_std": 0.0834130320530865,
+        "fold_scores": [
+          0.36714,
+          0.54465,
+          0.61557,
+          0.55094,
+          0.48946
+        ],
+        "other_metrics": {
+          "roc_auc": 0.9716167949079152,
+          "precision_at_top_1pct": 0.523076923076923,
+          "recall_at_top_1pct": 0.4429408602150538
+        },
+        "seconds": 1.1
+      },
+      "use_reduced": true,
+      "features": [
+        "amount",
+        "merchant_category",
+        "channel",
+        "hour_of_day",
+        "txn_count_24h",
+        "avg_amount_30d",
+        "amount_to_avg_ratio",
+        "failed_logins_7d"
+      ]
+    }
+  },
+  "note": "Selection, tuning and family choice share these folds (mild optimism); test is the honest check."
+}

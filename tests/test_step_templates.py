@@ -1,6 +1,6 @@
-"""Step templates (repo scripts/, shipped into trials as .claude/scripts/): present, compiled, referenced by
-their skills, copied into trials without scripts/dev, and (when a runtime Python with the modeling stack is
-available) runnable end to end."""
+"""Step templates (repo scripts/steps/, shipped into trials as .claude/scripts/): present, compiled,
+referenced by their skills, copied into trials without the contributor scripts, and (when a runtime Python
+with the modeling stack is available) runnable end to end."""
 import json
 import py_compile
 import random
@@ -48,7 +48,8 @@ def test_templates_ship_into_new_trials(capsys):
     for name in [*TEMPLATES, "aaml_common.py", "README.md"]:
         assert (trial / ".claude" / "scripts" / name).is_file(), name
     # contributor tools (the data generator knows the answer key) must never reach a trial
-    assert not (trial / ".claude" / "scripts" / "dev").exists()
+    assert not (trial / ".claude" / "scripts" / "generate_synthetic_fraud.py").exists()
+    assert not list((trial / ".claude" / "scripts").glob("run_agent_evals*"))
 
 
 # --------------------------------------------------------------------------- end to end

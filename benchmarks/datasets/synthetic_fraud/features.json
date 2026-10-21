@@ -1,0 +1,138 @@
+{
+  "dataset_id": "synthetic_fraud",
+  "generated_by": "scripts/generate_dataset_seeds.py (smoke sample)",
+  "columns": [
+    {
+      "name": "transaction_id",
+      "role": "id",
+      "type": "row_identifier",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "customer_id",
+      "role": "id",
+      "type": "entity_identifier",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "event_time",
+      "role": "time",
+      "type": "datetime",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "amount",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "currency",
+      "role": "drop",
+      "type": "constant",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "merchant_id",
+      "role": "feature",
+      "type": "high_cardinality_categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "merchant_category",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "channel",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "card_present",
+      "role": "feature",
+      "type": "boolean",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "country",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "is_foreign",
+      "role": "feature",
+      "type": "boolean",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "hour_of_day",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "customer_age",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0202
+    },
+    {
+      "name": "account_tenure_days",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "txn_count_24h",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "avg_amount_30d",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "amount_to_avg_ratio",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "distance_from_home_km",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0691
+    },
+    {
+      "name": "device_type",
+      "role": "feature",
+      "type": "categorical",
+      "missing_fraction": 0.6198
+    },
+    {
+      "name": "failed_logins_7d",
+      "role": "feature",
+      "type": "numeric",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "chargeback_flag",
+      "role": "leakage_suspect",
+      "type": "boolean",
+      "missing_fraction": 0.0
+    },
+    {
+      "name": "is_fraud",
+      "role": "target",
+      "type": "binary",
+      "missing_fraction": 0.0
+    }
+  ]
+}

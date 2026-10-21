@@ -1,0 +1,6 @@
+{
+  "dataset_id": "<id>",
+  "columns": [
+    {"name": "<column>", "role": "feature | target | id | time | drop | leakage_suspect", "type": "numeric | categorical | boolean | date | text", "description": "..."}
+  ]
+}
