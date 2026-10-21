@@ -47,6 +47,7 @@
   "dataset_path": "benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
   "suite": "e2e",
   "tiers": [
+    "pipeline",
     "e2e",
     "real"
   ],

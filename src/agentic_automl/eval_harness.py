@@ -3,6 +3,9 @@
 Tiers (--tier):
   deterministic  no Claude spend: copy each scenario's fixture seed into a fresh trial and run
                  the deterministic scorers against it (proves scorers, fixtures, schemas, gates).
+  pipeline       no Claude spend: rerun the whole chain from scratch with the step templates
+                 (real preprocessing, feature selection, training, evaluation) and score it with the
+                 end-to-end invariants. Proves the ML recipe; needs the runtime Python ML stack.
   auth           cheap preflight only: claude CLI, runtime Python + ML stack, GCS credentials,
                  GitHub CLI auth. Runs no scenarios.
   component      real agent run of one skill from a mid-chain fixture seed     (costs money)
@@ -10,7 +13,9 @@ Tiers (--tier):
   real           e2e on full-size data                                           (costs money)
 
 Paid tiers need --trust-runtime: the agent runs headless (claude -p) in trust mode inside a
-throwaway trial under --output-dir. Clarifying questions are answered from the scenario's
+throwaway trial under --output-dir. Cost controls: Sonnet at low effort by default, a hard
+--max-budget-usd cap per scenario, --max-turns, no web tools, no saved sessions; a run that
+hits a cap is "incomplete", not "pass". Clarifying questions are answered from the scenario's
 answer_bank, which is appended to the prompt.
 
 Scenarios: benchmarks/evals/scenarios/*.json (schemas/eval_scenario.schema.json).
@@ -39,7 +44,9 @@ from agentic_automl.contracts import schemas_dir
 from agentic_automl.eval_reports import render_results_markdown, render_results_tsv, verdict
 from agentic_automl.eval_scorers import artifact_snapshot, score_trial
 
-TIERS = ("deterministic", "auth", "component", "e2e", "real")
+TIERS = ("deterministic", "pipeline", "auth", "component", "e2e", "real")
+# Paid-tier defaults: the cheapest setup that still exercises the agent. Override with --model/--effort.
+DEFAULT_EVAL_MODEL, DEFAULT_EVAL_EFFORT = "sonnet", "low"
 PAID_TIERS = {"component", "e2e", "real"}
 
 
@@ -49,6 +56,8 @@ class EvalRunContext:
     output_dir: Path
     trust_runtime: bool = False
     model: str | None = None
+    effort: str | None = None
+    max_budget_usd: float | None = None  # run-wide cap; each scenario gets min(this, its own limit)
     run_id: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-"
                         + uuid.uuid4().hex[:6])
 
@@ -159,15 +168,39 @@ def build_prompt(scenario: dict, dataset_path: str | None) -> str:
     return "\n".join(lines)
 
 
+def run_pipeline(scenario: dict, ctx: EvalRunContext, root: Path | None = None) -> PreparedEvalTrial:
+    """$0 tier: run the whole chain with the step templates (no Claude) into a fresh trial."""
+    from agentic_automl.eval_seeds import SeedBuilder
+    from agentic_automl.state import runtime_python
+
+    trial = ctx.output_dir / "t" / f"{scenario['id']}-{ctx.run_id[-6:]}"
+    SeedBuilder(scenario["dataset_id"], runtime_python(), root, log=lambda *_: None,
+                trial_dir=trial, snapshot=False).build("evaluated")
+    return PreparedEvalTrial(scenario, trial)
+
+
+def scenario_budget(s: dict, ctx: EvalRunContext) -> float | None:
+    caps = [b for b in (s["limits"]["max_budget_usd"], ctx.max_budget_usd) if b]
+    return min(caps) if caps else None
+
+
 def run_agent(prepared: PreparedEvalTrial, ctx: EvalRunContext) -> AgentRunResult:
     from agentic_automl import cli
 
     s, trial = prepared.scenario, prepared.trial_dir
     dataset = artifacts.load_state(trial).get("dataset_path")
+    budget = scenario_budget(s, ctx)
+    # Cost controls: hard spend cap, turn cap, no web tools, no saved session. Hooks stay on (no --bare):
+    # the validator guards are part of what the eval measures.
     cmd = [cli.claude_executable(), "-p", build_prompt(s, dataset), "--output-format", "json",
-           "--max-turns", str(s["limits"]["max_turns"]), "--permission-mode", "acceptEdits"]
+           "--max-turns", str(s["limits"]["max_turns"]), "--permission-mode", "acceptEdits",
+           "--disallowedTools", "WebSearch", "WebFetch", "--no-session-persistence"]
+    if budget:
+        cmd += ["--max-budget-usd", f"{budget:.2f}"]
     if ctx.model:
         cmd += ["--model", ctx.model]
+    if ctx.effort:
+        cmd += ["--effort", ctx.effort]
     env = {**os.environ, "TRIAL_DIR": str(trial),
            "PATH": os.pathsep.join([str(Path(sys.executable).parent), os.environ.get("PATH", "")])}
     log = trial / "work" / "eval_agent_output.json"
@@ -194,26 +227,32 @@ def run_scenario(scenario: dict, ctx: EvalRunContext, root: Path | None = None) 
               "stop_reason": None, "trial_dir": None, "artifact_snapshot": {}, "scores": [],
               "process_metrics": {}, "cost": {}, "logs": {}}
     try:
-        prepared = prepare_trial(scenario, ctx, root)
+        if ctx.tier == "pipeline":
+            prepared = run_pipeline(scenario, ctx, root)
+            result["cost"] = {"usd": 0.0}
+        else:
+            prepared = prepare_trial(scenario, ctx, root)
         result["trial_dir"] = str(prepared.trial_dir)
         if ctx.tier in PAID_TIERS:
             run = run_agent(prepared, ctx)
             result["stop_reason"] = run.stop_reason
-            result["cost"] = {"usd": run.cost_usd, "budget_usd": scenario["limits"]["max_budget_usd"]}
+            result["cost"] = {"usd": run.cost_usd, "budget_usd": scenario_budget(scenario, ctx),
+                              "model": ctx.model, "effort": ctx.effort}
             result["process_metrics"]["turns"] = run.turns
             result["logs"]["agent_output"] = run.stdout_path
         scored = score_trial(scenario, prepared.trial_dir)
         result["scores"] = scored.score_dicts()
         result["artifact_snapshot"] = scored.artifact_snapshot
         result["process_metrics"].update(scored.process_metrics)
-        if ctx.tier in PAID_TIERS and result["stop_reason"] in ("timeout", "error_max_turns"):
+        if ctx.tier in PAID_TIERS and result["stop_reason"] in ("timeout", "error_max_turns",
+                                                                 "error_max_budget_usd"):
             result["status"] = "incomplete"
         else:
             result["status"] = "pass" if scored.passed else "fail"
-        over = (result["cost"].get("usd") or 0) > scenario["limits"]["max_budget_usd"] > 0
-        if over:
+        budget = scenario_budget(scenario, ctx)
+        if budget and (result["cost"].get("usd") or 0) > budget:
             result["scores"].append({"name": "budget", "passed": False,
-                                     "detail": f"cost ${result['cost']['usd']:.2f} > ${scenario['limits']['max_budget_usd']}"})
+                                     "detail": f"cost ${result['cost']['usd']:.2f} > ${budget:.2f}"})
             result["status"] = "fail"
     except FileNotFoundError as exc:
         result.update(status="harness-unavailable", stop_reason=str(exc))
@@ -297,7 +336,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dataset", default=None, help="only scenarios for this dataset_id")
     ap.add_argument("--scenario", default=None, help="only scenario ids matching this glob")
     ap.add_argument("--trust-runtime", action="store_true", help="required for paid tiers (headless agent runs)")
-    ap.add_argument("--model", default=None)
+    ap.add_argument("--model", default=DEFAULT_EVAL_MODEL, help=f"paid tiers (default {DEFAULT_EVAL_MODEL})")
+    ap.add_argument("--effort", default=DEFAULT_EVAL_EFFORT, help=f"paid tiers (default {DEFAULT_EVAL_EFFORT})")
+    ap.add_argument("--max-budget-usd", type=float, default=None,
+                    help="per-scenario spend cap for paid tiers (min with each scenario's own limit)")
     ap.add_argument("--list", action="store_true", help="list matching scenarios and exit")
     args = ap.parse_args(argv)
 
@@ -319,7 +361,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"--tier {args.tier} runs the real agent and costs money: pass --trust-runtime to confirm.",
               file=sys.stderr)
         return 2
-    ctx = EvalRunContext(args.tier, args.output_dir.resolve(), args.trust_runtime, args.model)
+    ctx = EvalRunContext(args.tier, args.output_dir.resolve(), args.trust_runtime, args.model, args.effort,
+                         args.max_budget_usd)
     (ctx.output_dir / "results").mkdir(parents=True, exist_ok=True)
     results = []
     for s in scenarios:

@@ -43,6 +43,7 @@
   "dataset_path": "benchmarks/evals/fixtures/datasets/telco_churn.csv",
   "suite": "e2e",
   "tiers": [
+    "pipeline",
     "e2e",
     "real"
   ],

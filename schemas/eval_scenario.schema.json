@@ -16,8 +16,8 @@
     "entry_skill": {"type": "string", "minLength": 1},
     "tiers": {
       "type": "array", "minItems": 1,
-      "items": {"enum": ["deterministic", "component", "e2e", "real"]},
-      "description": "Tiers this scenario runs in. deterministic = score the seed as-is (no agent)."
+      "items": {"enum": ["deterministic", "pipeline", "component", "e2e", "real"]},
+      "description": "Tiers this scenario runs in. deterministic = score the seed as-is; pipeline = rerun the chain with the step templates (both free); the rest run the agent."
     },
     "seed": {
       "type": "object",

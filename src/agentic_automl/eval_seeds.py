@@ -142,13 +142,19 @@ def plan_for(entry: dict, column_profile: dict, contract: dict) -> dict:
 
 
 class SeedBuilder:
-    def __init__(self, dataset_id: str, runtime_python: str, root: Path | None = None, log=print):
+    """snapshot=True (seed generation): resample the smoke CSV from the full data, write seed
+    directories and dataset docs into benchmarks/. snapshot=False (the eval `pipeline` tier):
+    build in `trial_dir` from the committed smoke CSV and write nothing into benchmarks/."""
+
+    def __init__(self, dataset_id: str, runtime_python: str, root: Path | None = None, log=print,
+                 trial_dir: Path | None = None, snapshot: bool = True):
         self.root = root or repo_root()
         self.entry = registry_entry(dataset_id, self.root)
         self.py = runtime_python
         self.log = log
-        self.tmp = Path(tempfile.mkdtemp(prefix=f"aaml-seed-{dataset_id}-"))
-        self.trial = self.tmp / "trial"
+        self.write_fixtures = snapshot
+        self.tmp = Path(tempfile.mkdtemp(prefix=f"aaml-seed-{dataset_id}-")) if trial_dir is None else None
+        self.trial = trial_dir or self.tmp / "trial"
 
     # -- helpers ----------------------------------------------------------------
     def _run(self, script: str, *args: str) -> str:
@@ -167,6 +173,8 @@ class SeedBuilder:
             raise RuntimeError(f"begin-skill {skill} blocked: {r.get('message')}")
 
     def snapshot(self, stage: str) -> Path:
+        if not self.write_fixtures:
+            return self.trial
         dest = fixtures_dir(self.root) / "seeds" / f"{self.entry['id']}_{stage}"
         if dest.exists():
             shutil.rmtree(dest)
@@ -187,7 +195,11 @@ class SeedBuilder:
 
         stop = STAGES.index(until)
         out = []
-        smoke = make_smoke_csv(self.entry, self.root)
+        committed = fixtures_dir(self.root) / "datasets" / f"{self.entry['id']}.csv"
+        if self.write_fixtures or not committed.is_file():
+            smoke = make_smoke_csv(self.entry, self.root)
+        else:
+            smoke = committed
         self.log(f"smoke CSV: {smoke.relative_to(self.root).as_posix()} ({self.entry.get('smoke_rows')} rows)")
         artifacts.ensure_state(self.trial, goal=self.entry.get("business_context"), dataset_path=smoke.as_posix())
         cli.sync_runtime_files(self.trial)
@@ -208,7 +220,8 @@ class SeedBuilder:
         self._save("column_profile", "data-profiling")
         cprof = json.loads((self.trial / "column_profile.json").read_text("utf-8"))
         assert_roles_match_golden(cprof, self.entry)
-        self._write_dataset_docs(cprof)
+        if self.write_fixtures:
+            self._write_dataset_docs(cprof)
         out.append(self.snapshot("after_profiling"))
         if stop == 1:
             return out
@@ -254,7 +267,8 @@ class SeedBuilder:
         (d / "sizing.json").write_text(json.dumps(sizing, indent=2) + "\n", encoding="utf-8")
 
     def cleanup(self) -> None:
-        shutil.rmtree(self.tmp, ignore_errors=True)
+        if self.tmp:
+            shutil.rmtree(self.tmp, ignore_errors=True)
 
 
 def seed_cli(argv: list[str] | None, *, default_dataset: str | None, until: str, prog: str, doc: str) -> int:
