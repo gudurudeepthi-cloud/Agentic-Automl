@@ -35,7 +35,7 @@ def safe_prefixes() -> list[list[str]]:
 
 def _is_template_copy(tokens: list[str]) -> bool:
     """`cp .claude/scripts/<file>... work/[<name>]`: copying step templates into the lab notebook."""
-    if len(tokens) < 3 or tokens[0] != "cp":
+    if len(tokens) < 3 or tokens[0] not in ("cp", "Copy-Item", "copy"):
         return False
     *sources, dest = tokens[1:]
     clean = lambda p: ".." not in p.split("/") and not p.startswith(("/", "~", "-"))  # noqa: E731
@@ -57,11 +57,33 @@ def is_auto_allowed(command: str) -> bool:
     return any(tokens[: len(p)] == p and len(tokens) > len(p) for p in safe_prefixes())
 
 
+SHELL_TOOLS = ("Bash", "PowerShell")  # Claude Code on Windows runs commands through PowerShell
+
+
+def _strip_call_operator(command: str) -> str:
+    """PowerShell runs a quoted executable path as `& "C:/.../python.exe" args`; drop the `&`."""
+    command = command.strip()
+    if command.startswith("& "):
+        rest = command[2:].lstrip()
+        if rest[:1] in ("'", '"'):
+            quote = rest[0]
+            end = rest.find(quote, 1)
+            if end > 0:
+                return rest[1:end] + rest[end + 1:]
+        return rest
+    return command
+
+
 def decision(hook_input: dict[str, Any]) -> dict[str, Any] | None:
-    if hook_input.get("tool_name") != "Bash":
+    tool = hook_input.get("tool_name")
+    if tool not in SHELL_TOOLS:
         return None
     command = (hook_input.get("tool_input") or {}).get("command")
-    if not isinstance(command, str) or not is_auto_allowed(command):
+    if not isinstance(command, str):
+        return None
+    if tool == "PowerShell":
+        command = _strip_call_operator(command)
+    if not is_auto_allowed(command):
         return None
     return {
         "hookSpecificOutput": {

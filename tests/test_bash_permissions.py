@@ -71,6 +71,22 @@ def test_non_bash_tools_ignored():
     assert bp.decision({"tool_name": "Write", "tool_input": {"command": "mkdir -p x"}}) is None
 
 
+def test_powershell_tool_is_guarded_too(monkeypatch):
+    """Claude Code on Windows runs commands through PowerShell (found by the component smoke evals)."""
+    monkeypatch.setenv("AGENTIC_AUTOML_PYTHON", "C:/rt/Scripts/python.exe")
+
+    def allowed(cmd):
+        return bp.decision({"tool_name": "PowerShell", "tool_input": {"command": cmd}}) is not None
+
+    assert allowed("agentic-automl artifacts begin-skill data-profiling")
+    assert allowed('& "C:/rt/Scripts/python.exe" work/profile_dataset.py')
+    assert allowed("C:/rt/Scripts/python.exe work/train.py --folds 4")
+    assert allowed("Copy-Item .claude/scripts/aaml_common.py work/")
+    assert not allowed("agentic-automl artifacts status; Remove-Item -Recurse work")
+    assert not allowed('& "C:/other/python.exe" work/x.py')
+    assert not allowed("Remove-Item -Recurse work")
+
+
 def test_session_analysis_extracts_tail(trial):
     write_transcript(trial, "s1", ("user", "first"), ("assistant", "second"), ("user", "third"))
     assert session_analysis.extract_text(trial).splitlines()[0] == "[user] first"

@@ -82,7 +82,20 @@ def materialize_settings(trial: Path) -> None:
         runtime_md = claude_dir / "CLAUDE.md"
         runtime_md.write_text(runtime_md.read_text(encoding="utf-8").replace(st.DEFAULT_RUNTIME_PYTHON, py),
                               encoding="utf-8")
+    settings["permissions"]["allow"] = with_powershell_mirrors(settings["permissions"]["allow"])
     settings_file.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+
+
+def with_powershell_mirrors(rules: list[str]) -> list[str]:
+    """On Windows Claude Code runs shell commands through the PowerShell tool, so every Bash(...)
+    allow rule needs a PowerShell(...) twin or the validator commands prompt (and headless runs fail)."""
+    out = list(rules)
+    for rule in rules:
+        if rule.startswith("Bash(") and "&&" not in rule and "PYTHONPATH=" not in rule:
+            twin = "PowerShell(" + rule[len("Bash("):]
+            if twin not in out:
+                out.append(twin)
+    return out
 
 
 def trust_requested(flag: bool) -> bool:
@@ -129,7 +142,7 @@ def apply_trust(trial: Path) -> None:
         except json.JSONDecodeError:
             settings = {}
     allow = settings.setdefault("permissions", {}).setdefault("allow", [])
-    allow.extend(rule for rule in trust_allows() if rule not in allow)
+    allow.extend(rule for rule in with_powershell_mirrors(trust_allows()) if rule not in allow)
     local.parent.mkdir(parents=True, exist_ok=True)
     local.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
 

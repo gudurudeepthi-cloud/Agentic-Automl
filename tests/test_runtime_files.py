@@ -35,9 +35,9 @@ def test_hooks_json_wires_guards():
     by_matcher = {e["matcher"]: e["hooks"][0]["command"] for e in pre}
     assert by_matcher["Write|Edit|MultiEdit|NotebookEdit"] == \
         'agentic-automl artifacts validate-write --trial "${TRIAL_DIR:-.}"'
-    assert by_matcher["Bash"] == "agentic-automl bash-permissions check"
+    assert by_matcher["Bash|PowerShell"] == "agentic-automl bash-permissions check"
     [capture] = load("hooks.json")["hooks"]["PostToolUseFailure"]
-    assert capture["matcher"] == "Bash" and capture["hooks"][0]["async"] is True
+    assert capture["matcher"] == "Bash|PowerShell" and capture["hooks"][0]["async"] is True
     assert capture["hooks"][0]["command"].startswith("agentic-automl feedback-episodes capture")
 
 
@@ -55,6 +55,14 @@ def test_trial_settings_merge_hooks_idempotently(capsys):
     cli.sync_runtime_files(trial)
     again = json.loads((trial / ".claude" / "settings.json").read_text(encoding="utf-8"))
     assert again == settings
+
+
+def test_trial_settings_mirror_bash_rules_for_powershell(capsys):
+    _, settings = _trial_settings(capsys)
+    allow = settings["permissions"]["allow"]
+    for rule in ("PowerShell(agentic-automl artifacts *)", "PowerShell(agentic-automl feedback-episodes *)"):
+        assert rule in allow, rule
+    assert sum(r.startswith("PowerShell(") for r in allow) == sum(r.startswith("Bash(") for r in allow)
 
 
 def test_runtime_python_substituted_in_trial(capsys, monkeypatch):
