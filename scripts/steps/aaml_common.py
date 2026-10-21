@@ -33,7 +33,7 @@ def read_json(path, default=None):
         if default is not None:
             return default
         raise FileNotFoundError(f"{path} not found (run the earlier step first)")
-    return json.loads(p.read_text(encoding="utf-8"))
+    return json.loads(p.read_text(encoding="utf-8-sig"))  # Windows PowerShell 5.1 writes a UTF-8 BOM
 
 
 def write_json(path, payload) -> None:
