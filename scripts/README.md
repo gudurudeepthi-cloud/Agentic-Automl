@@ -2,7 +2,7 @@
 
 Contributor tooling: evals, benchmarks, seeds and releases. None of it reaches a trial.
 The step templates the agent copies are in `steps/` and are the only part shipped into
-trials (as `.claude/scripts/`). Most scripts are thin wrappers over `src/agentic_automl/` modules.
+trials (as `templates/`). Most scripts are thin wrappers over `src/agentic_automl/` modules.
 
 Run with a Python that has this repo's dependencies, e.g. `.venv\Scripts\python.exe scripts/<name>`.
 Seed generation also needs the trial runtime Python with the ML stack, which it calls for you.

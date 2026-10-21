@@ -1,4 +1,4 @@
-"""Shared helpers for the step templates in .claude/scripts/ (copy this file into work/ with them).
+"""Shared helpers for the step templates in templates/ (copy this file into work/ with them).
 
 One definition of: loading the contract's data, the split, the CV folds, metrics, the
 shared encoder and the model families. Profiling, the family screen, preprocessing,

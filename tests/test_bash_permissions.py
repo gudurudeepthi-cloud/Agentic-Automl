@@ -32,13 +32,13 @@ from test_cli import write_transcript
         ("agentic-automl artifactsX status", False),
         ("", False),
         ("mkdir -p 'unterminated", False),
-        ("cp .claude/scripts/aaml_common.py .claude/scripts/train.py work/", True),
-        ("cp ./.claude/scripts/features_template.py work/features.py", True),
-        ("cp .claude/scripts/train.py /tmp/", False),
-        ("cp .claude/scripts/../settings.json work/", False),
+        ("cp templates/aaml_common.py templates/train.py work/", True),
+        ("cp ./templates/features_template.py work/features.py", True),
+        ("cp templates/train.py /tmp/", False),
+        ("cp templates/../settings.json work/", False),
         ("cp prediction_contract.json work/", False),
-        ("cp -r .claude/scripts work/", False),
-        ("cp .claude/scripts/train.py work/../state/", False),
+        ("cp -r templates/ work/", False),
+        ("cp templates/train.py work/../state/", False),
     ],
 )
 def test_auto_allow(command, allowed):
@@ -81,7 +81,9 @@ def test_powershell_tool_is_guarded_too(monkeypatch):
     assert allowed("agentic-automl artifacts begin-skill data-profiling")
     assert allowed('& "C:/rt/Scripts/python.exe" work/profile_dataset.py')
     assert allowed("C:/rt/Scripts/python.exe work/train.py --folds 4")
-    assert allowed("Copy-Item .claude/scripts/aaml_common.py work/")
+    assert allowed("Copy-Item templates/aaml_common.py work/")
+    assert allowed("Copy-Item templates\\aaml_common.py, templates\\profile_dataset.py work\\")
+    assert not allowed("Copy-Item .claude\\settings.json work\\")
     assert not allowed("agentic-automl artifacts status; Remove-Item -Recurse work")
     assert not allowed('& "C:/other/python.exe" work/x.py')
     assert not allowed("Remove-Item -Recurse work")

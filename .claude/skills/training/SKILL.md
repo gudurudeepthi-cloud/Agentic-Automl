@@ -44,7 +44,7 @@ agentic-automl artifacts save-artifact training_summary --payload work/training_
 
 ## Steps
 1. Start from the templates:
-   `cp .claude/scripts/aaml_common.py .claude/scripts/feature_selection.py .claude/scripts/train.py work/`.
+   `cp templates/aaml_common.py templates/feature_selection.py templates/train.py work/`.
    Shared CV/model code lives in `aaml_common.py`, so both scripts use the same
    folds (time-series for temporal contracts, group folds when
    `entity_id_column` repeats). Adapt them to the plan: families, search

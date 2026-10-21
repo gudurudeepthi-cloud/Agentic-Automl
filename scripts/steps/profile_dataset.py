@@ -89,7 +89,7 @@ def probe_strength(col, is_cat):
     return round(float(max(max(a, 1 - a) for a in aucs)), 4) if aucs else None
 
 
-flags, columns = [], []
+flags, columns, text_missing = [], [], {}
 ent, wcol, scol = c.get("entity_id_column"), c.get("weight_column"), c.get("split_column")
 for col in df.columns:
     s = df[col]
@@ -116,6 +116,8 @@ for col in df.columns:
         # Numbers stored as text (e.g. "29.85" with " " for blanks): a numeric feature, not an id/categorical.
         role, sem = "feature", "numeric_as_text"
         conv = A.coerce_numeric_text(s)
+        missing = round(float(conv.isna().mean()), 4)  # blanks count as missing once coerced
+        text_missing[col] = missing
         q = conv.quantile([0, 0.5, 1])
         stats = {"min": round(float(q.iloc[0]), 4), "median": round(float(q.iloc[1]), 4),
                  "max": round(float(q.iloc[2]), 4), "unparseable_or_blank": int(conv.isna().sum() - s.isna().sum())}
@@ -228,7 +230,8 @@ dataset_profile = {
     "target_summary": target_summary,
     "split_summary": {**{k: v for k, v in info.items() if k not in ("raw_rows", "duplicate_rows")},
                       "train": tr, "test": te},
-    "missing_value_summary": {col: round(float(v), 4) for col, v in df.isna().mean().items() if v > 0},
+    "missing_value_summary": {col: v for col, v in {**{c: round(float(m), 4) for c, m in df.isna().mean().items()},
+                                                    **text_missing}.items() if v > 0},
     "duplicate_rows": int(info.get("duplicate_rows") or 0),
     "data_quality_flags": flags,
     "profiling_script": "work/profile_dataset.py",

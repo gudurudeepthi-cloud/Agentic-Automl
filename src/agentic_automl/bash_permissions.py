@@ -34,12 +34,13 @@ def safe_prefixes() -> list[list[str]]:
 
 
 def _is_template_copy(tokens: list[str]) -> bool:
-    """`cp .claude/scripts/<file>... work/[<name>]`: copying step templates into the lab notebook."""
+    """`cp templates/<file>... work/[<name>]`: copying step templates into the lab notebook."""
     if len(tokens) < 3 or tokens[0] not in ("cp", "Copy-Item", "copy"):
         return False
-    *sources, dest = tokens[1:]
+    *sources, dest = (t.rstrip(",") for t in tokens[1:])  # PowerShell lists sources as `a, b`
+    sources = [s for s in sources if s]
     clean = lambda p: ".." not in p.split("/") and not p.startswith(("/", "~", "-"))  # noqa: E731
-    return (all(clean(s) and s.removeprefix("./").startswith(".claude/scripts/") for s in sources)
+    return (all(clean(s) and s.removeprefix("./").startswith("templates/") for s in sources)
             and clean(dest) and dest.removeprefix("./").split("/")[0] == "work")
 
 
@@ -82,7 +83,8 @@ def decision(hook_input: dict[str, Any]) -> dict[str, Any] | None:
     if not isinstance(command, str):
         return None
     if tool == "PowerShell":
-        command = _strip_call_operator(command)
+        # Windows paths: shlex would read `\` as an escape; `/` works in PowerShell too.
+        command = _strip_call_operator(command.replace("\\", "/"))
     if not is_auto_allowed(command):
         return None
     return {

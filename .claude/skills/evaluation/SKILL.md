@@ -54,7 +54,7 @@ agentic-automl artifacts save-artifact evaluation_summary --payload work/evaluat
 
 ## Steps
 1. Start from the template:
-   `cp .claude/scripts/aaml_common.py .claude/scripts/evaluate.py work/`.
+   `cp templates/aaml_common.py templates/evaluate.py work/`.
    It refuses to run once `evaluation_summary` exists, unless you pass
    `--rerun-reason`, which is recorded. It picks any threshold on the CV
    predictions (`--threshold-rule f1|top:<frac>`) and computes a bootstrap CI for

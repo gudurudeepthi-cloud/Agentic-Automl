@@ -52,7 +52,7 @@ def test_contributor_scripts_never_reach_trials(capsys):
 
     cli.main(["new", "--no-launch"])
     trial = Path(json.loads(capsys.readouterr().out)["trial_dir"])
-    shipped = {p.name for p in (trial / ".claude" / "scripts").iterdir()}
+    shipped = {p.name for p in (trial / "templates").iterdir()}
     assert not shipped & {*EXPECTED_SCRIPTS, "generate_synthetic_fraud.py"}
 
 

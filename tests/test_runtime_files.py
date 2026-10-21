@@ -61,7 +61,7 @@ def test_trial_settings_mirror_bash_rules_for_powershell(capsys):
     _, settings = _trial_settings(capsys)
     allow = settings["permissions"]["allow"]
     for rule in ("PowerShell(agentic-automl artifacts *)", "PowerShell(agentic-automl feedback-episodes *)",
-                 "PowerShell(cp .claude/scripts/*)", "PowerShell(Copy-Item .claude/scripts/*)"):
+                 "PowerShell(cp templates/*)", "PowerShell(Copy-Item templates/*)"):
         assert rule in allow, rule
     bash = {r[len("Bash("):] for r in allow if r.startswith("Bash(")}
     assert bash <= {r[len("PowerShell("):] for r in allow if r.startswith("PowerShell(")}

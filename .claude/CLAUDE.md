@@ -60,10 +60,10 @@ state/                wrapper-owned (run_state.json, workflow_plan.json); read-o
 
 - `work/` is a lab notebook. Give scripts descriptive names
   (`work/profile_columns.py`, `work/train_lightgbm.py`), not `test.py` or `tmp2.py`.
-- **Step templates** live in `.claude/scripts/` (see its `README.md`): profiling,
+- **Step templates** live in `templates/` (see its `README.md`): profiling,
   feature engineering, family screen, preprocessing, feature selection, training
   and evaluation, plus the shared `aaml_common.py`. Copy one into `work/` with
-  `cp .claude/scripts/<file> work/`, adapt it, and run it. Don't write these steps
+  `cp templates/<file> work/`, adapt it, and run it. Don't write these steps
   from scratch. Iterate in place (edit `work/train.py`, don't fork
   `train_v2.py`, `train_v3.py`); the artifact `notes` record what changed.
 - Deliverables go in `outputs/`. Scratch never does.

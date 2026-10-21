@@ -196,7 +196,7 @@ def claude_template_dir() -> Path:
 
 
 def step_templates_dir() -> Path:
-    """Step-template scripts (repo `scripts/steps/`), copied into each trial as `.claude/scripts/`.
+    """Step-template scripts (repo `scripts/steps/`), copied into each trial as `templates/`.
 
     The rest of `scripts/` is contributor tooling (evals, benchmarks, release) and never
     reaches a trial; the synthetic-data generator there would reveal the answer key.

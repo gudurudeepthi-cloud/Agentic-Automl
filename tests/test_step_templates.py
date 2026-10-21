@@ -1,4 +1,4 @@
-"""Step templates (repo scripts/steps/, shipped into trials as .claude/scripts/): present, compiled,
+"""Step templates (repo scripts/steps/, shipped into trials as templates/): present, compiled,
 referenced by their skills, copied into trials without the contributor scripts, and (when a runtime Python
 with the modeling stack is available) runnable end to end."""
 import json
@@ -38,7 +38,7 @@ def test_template_compiles(name, tmp_path):
 
 @pytest.mark.parametrize("name,skill", TEMPLATES.items())
 def test_skill_points_at_its_template(name, skill):
-    assert f".claude/scripts/{name}" in (SKILLS / skill / "SKILL.md").read_text(encoding="utf-8")
+    assert f"templates/{name}" in (SKILLS / skill / "SKILL.md").read_text(encoding="utf-8")
     assert f"`{name}`" in (SCRIPTS / "README.md").read_text(encoding="utf-8")
 
 
@@ -46,10 +46,10 @@ def test_templates_ship_into_new_trials(capsys):
     cli.main(["new", "--no-launch"])
     trial = Path(json.loads(capsys.readouterr().out)["trial_dir"])
     for name in [*TEMPLATES, "aaml_common.py", "README.md"]:
-        assert (trial / ".claude" / "scripts" / name).is_file(), name
+        assert (trial / "templates" / name).is_file(), name
     # contributor tools (the data generator knows the answer key) must never reach a trial
-    assert not (trial / ".claude" / "scripts" / "generate_synthetic_fraud.py").exists()
-    assert not list((trial / ".claude" / "scripts").glob("run_agent_evals*"))
+    assert not (trial / "templates" / "generate_synthetic_fraud.py").exists()
+    assert not list((trial / "templates").glob("run_agent_evals*"))
 
 
 # --------------------------------------------------------------------------- end to end

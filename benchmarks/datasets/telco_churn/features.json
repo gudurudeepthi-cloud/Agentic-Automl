@@ -120,7 +120,7 @@
       "name": "TotalCharges",
       "role": "feature",
       "type": "numeric_as_text",
-      "missing_fraction": 0.0
+      "missing_fraction": 0.0023
     },
     {
       "name": "Churn",

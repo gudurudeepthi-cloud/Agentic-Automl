@@ -1,27 +1,27 @@
 {
   "trial_id": "trial",
-  "created_at": "2026-10-21T12:59:20+00:00",
-  "updated_at": "2026-10-21T12:59:23+00:00",
+  "created_at": "2026-10-21T13:06:54+00:00",
+  "updated_at": "2026-10-21T13:06:58+00:00",
   "artifacts": [
     {
       "key": "prediction_contract",
       "path": "prediction_contract.json",
       "source_skill": "prediction-contract",
-      "saved_at": "2026-10-21T12:59:20+00:00",
+      "saved_at": "2026-10-21T13:06:55+00:00",
       "version": 1
     },
     {
       "key": "dataset_profile",
       "path": "dataset_profile.json",
       "source_skill": "data-profiling",
-      "saved_at": "2026-10-21T12:59:23+00:00",
+      "saved_at": "2026-10-21T13:06:58+00:00",
       "version": 1
     },
     {
       "key": "column_profile",
       "path": "column_profile.json",
       "source_skill": "data-profiling",
-      "saved_at": "2026-10-21T12:59:23+00:00",
+      "saved_at": "2026-10-21T13:06:58+00:00",
       "version": 1
     }
   ],
@@ -41,35 +41,35 @@
   "sessions": [],
   "validation_log": [
     {
-      "at": "2026-10-21T12:59:20+00:00",
+      "at": "2026-10-21T13:06:55+00:00",
       "action": "begin-skill",
       "ok": true,
       "key": null,
       "skill": "prediction-contract"
     },
     {
-      "at": "2026-10-21T12:59:20+00:00",
+      "at": "2026-10-21T13:06:55+00:00",
       "action": "save-artifact",
       "ok": true,
       "key": "prediction_contract",
       "skill": "prediction-contract"
     },
     {
-      "at": "2026-10-21T12:59:20+00:00",
+      "at": "2026-10-21T13:06:55+00:00",
       "action": "begin-skill",
       "ok": true,
       "key": null,
       "skill": "data-profiling"
     },
     {
-      "at": "2026-10-21T12:59:23+00:00",
+      "at": "2026-10-21T13:06:58+00:00",
       "action": "save-artifact",
       "ok": true,
       "key": "dataset_profile",
       "skill": "data-profiling"
     },
     {
-      "at": "2026-10-21T12:59:23+00:00",
+      "at": "2026-10-21T13:06:58+00:00",
       "action": "save-artifact",
       "ok": true,
       "key": "column_profile",

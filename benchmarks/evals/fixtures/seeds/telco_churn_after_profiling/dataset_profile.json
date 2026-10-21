@@ -24,7 +24,9 @@
       "positive_rate": 0.27333
     }
   },
-  "missing_value_summary": {},
+  "missing_value_summary": {
+    "TotalCharges": 0.0023
+  },
   "duplicate_rows": 0,
   "data_quality_flags": [
     {
@@ -44,6 +46,6 @@
   ],
   "profiling_script": "work/profile_dataset.py",
   "segment_summary": {},
-  "generated_at": "2026-10-21T12:59:23+00:00",
+  "generated_at": "2026-10-21T13:06:58+00:00",
   "notes": "n_rows counts raw rows (3000); target and split counts are after removing 0 exact duplicates. Leakage probe on 2400 train rows (seed 42)."
 }

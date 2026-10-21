@@ -62,7 +62,7 @@
           "pr_auc": 0.6681284760092685,
           "log_loss": 0.4167530277995885
         },
-        "seconds": 1.9,
+        "seconds": 2.1,
         "permutation_importance": {
           "gender": {
             "mean": -0.0005834477582858933,
@@ -319,7 +319,7 @@
           "pr_auc": 0.6487733341199465,
           "log_loss": 0.4420185854115438
         },
-        "seconds": 4.6,
+        "seconds": 5.0,
         "permutation_importance": {
           "gender": {
             "mean": 0.00045124434431283617,
@@ -537,7 +537,7 @@
           "pr_auc": 0.6628988630232954,
           "log_loss": 0.4326714155445936
         },
-        "seconds": 0.7
+        "seconds": 0.9
       },
       "use_reduced": true,
       "features": [

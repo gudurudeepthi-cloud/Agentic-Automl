@@ -55,7 +55,7 @@ if [[ "$SMOKE" == 1 ]]; then
   "$BIN" --version
   AGENTIC_AUTOML_HOME="$SANDBOX/home" AGENTIC_AUTOML_TRIALS_DIR="$SANDBOX/trials" \
     "$BIN" new --no-launch >/dev/null
-  ls "$SANDBOX"/trials/*/.claude/scripts/aaml_common.py >/dev/null \
+  ls "$SANDBOX"/trials/*/templates/aaml_common.py >/dev/null \
     || { echo "installed tool did not scaffold step templates into a trial" >&2; exit 1; }
   echo "smoke OK: installed tool scaffolds a trial with skills and step templates"
 fi

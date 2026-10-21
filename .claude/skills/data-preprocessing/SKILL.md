@@ -42,7 +42,7 @@ agentic-automl artifacts save-artifact preprocessing_summary --payload work/prep
 
 ## Steps
 1. Start from the template:
-   `cp .claude/scripts/aaml_common.py .claude/scripts/preprocess.py work/`
+   `cp templates/aaml_common.py templates/preprocess.py work/`
    (plus `work/features.py` from planning, if the plan has engineered features).
    It already does the steps below. It fails if a leakage suspect isn't dropped,
    if a high-cardinality categorical would be one-hot encoded, or if row counts

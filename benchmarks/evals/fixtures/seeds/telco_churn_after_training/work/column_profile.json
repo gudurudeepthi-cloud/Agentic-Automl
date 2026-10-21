@@ -293,7 +293,7 @@
       "dtype": "str",
       "semantic_type": "numeric_as_text",
       "role": "feature",
-      "missing_fraction": 0.0,
+      "missing_fraction": 0.0023,
       "n_unique": 2874,
       "stats": {
         "min": 18.8,
@@ -312,5 +312,5 @@
       "n_unique": 2
     }
   ],
-  "generated_at": "2026-10-21T12:59:23+00:00"
+  "generated_at": "2026-10-21T13:06:58+00:00"
 }

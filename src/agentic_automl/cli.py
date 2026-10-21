@@ -57,9 +57,11 @@ class CliError(Exception):
 
 def sync_runtime_files(trial: Path) -> None:
     """Copy the runtime .claude tree into the trial (settings.local.json is trial-owned), plus the
-    step templates from scripts/steps/ as .claude/scripts/."""
+    step templates from scripts/steps/ as templates/."""
     shutil.copytree(claude_template_dir(), trial / ".claude", dirs_exist_ok=True, ignore=RUNTIME_IGNORE)
-    shutil.copytree(step_templates_dir(), trial / ".claude" / "scripts", dirs_exist_ok=True, ignore=TEMPLATES_IGNORE)
+    # Outside .claude/: Claude Code treats .claude/** as sensitive, so copying from there prompts.
+    shutil.copytree(step_templates_dir(), trial / "templates", dirs_exist_ok=True, ignore=TEMPLATES_IGNORE)
+    shutil.rmtree(trial / ".claude" / "scripts", ignore_errors=True)  # pre-templates/ location
     materialize_settings(trial)
 
 

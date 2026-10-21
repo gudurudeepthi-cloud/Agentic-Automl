@@ -5,15 +5,15 @@ are generalized to work from the contract and plan. Don't write these steps from
 scratch. Copy the template you need into `work/`, adapt it to the trial, and run it:
 
 ```
-cp .claude/scripts/aaml_common.py work/
-cp .claude/scripts/<step>.py work/
+cp templates/aaml_common.py work/
+cp templates/<step>.py work/
 <runtime python> work/<step>.py --help
 ```
 
 Run scripts from the trial root. `aaml_common.py` must sit next to them in `work/`.
 
 In the repo these live in `scripts/steps/`. The launcher copies them into every
-trial as `.claude/scripts/` on new and resume. The rest of `scripts/` is contributor
+trial as `templates/` on new and resume. The rest of `scripts/` is contributor
 tooling and is never copied into a trial.
 
 | Skill | Template | Reads | Writes |
