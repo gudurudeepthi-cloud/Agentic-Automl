@@ -56,7 +56,17 @@ agentic-automl artifacts save-artifact training_summary --payload work/training_
    `work/feature_selection.py`, which `train.py` reads, so it can be found,
    re-run and audited separately. It records the plan's drops, removes
    near-duplicates (|Spearman| > 0.95: keep the original over an engineered
-   transform), and tunes list-valued `search_space` entries. It then computes
+   transform), then runs the **filter methods** in `--filters`:
+   - `quasi_constant` and `bivariate` run by default. Bivariate is per-bin event rate,
+     WoE and Information Value for binary targets, Cramér's V for multiclass and eta
+     for regression. Its tables go to `outputs/model/bivariate.json`.
+   - `mutual_info`, `vif` (linear models, collinear numerics) and `l1` (L1
+     logistic/Lasso per fold) are opt-in.
+
+   The filtered pool is kept only if CV doesn't get worse. Use
+   `--filters-only` for a quick bivariate report without model fits, and show the
+   user the strongest and weakest features. Required features are exempt
+   throughout. It then tunes list-valued `search_space` entries and computes
    permutation importance of each raw feature on every validation fold, drops
    features with mean importance ≤ 0 (`--rule stable` is stricter), re-scores,
    and keeps the reduced set only if it is within 1 std of the full set. The

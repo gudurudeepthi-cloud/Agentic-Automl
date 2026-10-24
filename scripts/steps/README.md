@@ -23,9 +23,23 @@ tooling and is never copied into a trial.
 | workflow-planning | `features_template.py` → `work/features.py` (optional) | contract | engineered features (point-in-time) |
 | workflow-planning | `model_family_screen.py` | contract, profiles, `work/features.py` | `work/model_family_advice.json` |
 | data-preprocessing | `preprocess.py` | contract, plan, profiles, `work/features.py` | parquet, `outputs/pipeline/preprocessor.joblib`, `work/preprocessing_summary.json` |
-| training | `feature_selection.py` (`--smoke` first) | preprocessed train, plan | `outputs/model/feature_selection.json` |
+| training | `feature_selection.py` (`--smoke` first; `--filters-only` for the bivariate report) | preprocessed train, plan | `outputs/model/feature_selection.json`, `outputs/model/bivariate.json` |
 | training | `train.py` | `feature_selection.json` | models, `cv_predictions.parquet`, `work/training_summary.json` |
 | evaluation | `evaluate.py` | test parquet, models, profiles | plots, `work/evaluation_summary.json` |
+
+Feature selection stages (all on train CV folds; required features exempt):
+1. plan drops
+2. Spearman redundancy
+3. filters (`--filters`):
+   - `quasi_constant`
+   - `bivariate`: IV/WoE per bin for binary targets, Cramér's V for multiclass, eta for regression
+   - `mutual_info`
+   - `vif`
+   - `l1`
+
+   The filtered set is kept only if CV holds.
+4. per-family tuning and permutation importance
+5. keep the reduced set only if within 1 std of the full set
 
 What `aaml_common.py` provides:
 - **One split** (`split`). Profiling, the screen and preprocessing all get the same rows: exact duplicates are dropped and `work/features.py` runs on the time-sorted table before the split.

@@ -155,8 +155,20 @@ def test_templates_run_end_to_end(tmp_path, split):
     _ok(trial, "preprocess.py")
     _promote(trial, "preprocessing_summary", "outputs/pipeline/preprocessing_summary.json")
     assert "estimated" in _ok(trial, "feature_selection.py", "--folds", "3", "--smoke")
+    out = _ok(trial, "feature_selection.py", "--folds", "3", "--filters-only",
+              "--filters", "quasi_constant,bivariate,mutual_info,vif,l1")
+    assert "feature_selection.json not written" in out
+    assert not (trial / "outputs/model/feature_selection.json").exists()
+    biv = json.loads((trial / "outputs/model/bivariate.json").read_text())
+    strength = {b["feature"]: b["strength"] for b in biv["features"]}
+    assert biv["features"][0]["statistic"] == "information_value" and strength["x1"] > strength["x2"]
+    train_rows = json.loads((trial / "dataset_profile.json").read_text())["split_summary"]["train"]["rows"]
+    assert all(sum(r["n"] for r in b["bins"]) == train_rows for b in biv["features"])  # every row in one bin
+    x2_bins = next(b for b in biv["features"] if b["feature"] == "x2")["bins"]
+    assert x2_bins[-1]["bin"] == "<missing>"  # 5% blanks get their own bin
     _ok(trial, "feature_selection.py", "--folds", "3")
     selection = json.loads((trial / "outputs/model/feature_selection.json").read_text())
+    assert "x2" not in selection["filters"]["removed"]["bivariate"]  # noise, but required by the contract
     assert "x3" not in selection["candidate_pool"] and selection["required_by_contract"] == ["x2"]
     assert all("x2" in fam["features"] for fam in selection["families"].values())
     _ok(trial, "train.py", "--folds", "3")
