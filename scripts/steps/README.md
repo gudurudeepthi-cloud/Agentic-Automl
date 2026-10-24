@@ -18,6 +18,7 @@ tooling and is never copied into a trial.
 
 | Skill | Template | Reads | Writes |
 |---|---|---|---|
+| prediction-contract | `inspect_dataset.py` (takes the data paths) | data only (no contract yet) | `work/intake_candidates.json` (proposals for the intake interview) |
 | data-profiling | `profile_dataset.py` | contract, data | `work/dataset_profile.json`, `work/column_profile.json` |
 | workflow-planning | `features_template.py` → `work/features.py` (optional) | contract | engineered features (point-in-time) |
 | workflow-planning | `model_family_screen.py` | contract, profiles, `work/features.py` | `work/model_family_advice.json` |
@@ -40,6 +41,7 @@ Rules the templates enforce (keep them when you adapt):
 - Test is read only by `evaluate.py`, and only once. A re-run needs `--rerun-reason`, which is recorded.
 - Thresholds come from CV predictions, never from test.
 - Leakage suspects must be in `drop_columns`, and preprocessing fails otherwise.
+- Intake answers are binding. Contract `excluded_columns` are profiled as role `drop` and can never be features. `required_features` survive feature selection, and preprocessing fails if the plan drops one.
 - Every trust-check number is computed, including the test-metric bootstrap CI. Don't paste in numbers from elsewhere.
 - Engineered features must be point-in-time (see `features_template.py`).
 

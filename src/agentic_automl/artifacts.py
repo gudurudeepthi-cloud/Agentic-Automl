@@ -98,6 +98,25 @@ def validate_payload(key: str, payload: Any) -> list[str]:
     for err in errors:
         where = "$" + "".join(f"[{p!r}]" if isinstance(p, int) else f".{p}" for p in err.absolute_path)
         out.append(f"{where}: {err.message}")
+    if key == "prediction_contract" and not out:
+        out += _contract_column_conflicts(payload)
+    return out
+
+
+def _contract_column_conflicts(c: dict) -> list[str]:
+    """Intake answers that contradict each other (the schema can't express these)."""
+    excluded = {e["column"] for e in c.get("excluded_columns") or []}
+    required = set(c.get("required_features") or [])
+    non_features = {c["target_column"], *(c.get(k) for k in ("time_column", "entity_id_column", "weight_column",
+                                                            "split_column") if c.get(k))}
+    out = []
+    if c["target_column"] in excluded:
+        out.append(f"$.excluded_columns: the target {c['target_column']!r} cannot be excluded")
+    if required & excluded:
+        out.append(f"$.required_features: {sorted(required & excluded)} are also in excluded_columns")
+    if required & non_features:
+        out.append(f"$.required_features: {sorted(required & non_features)} are target/time/id/weight/split "
+                   "columns, not features")
     return out
 
 

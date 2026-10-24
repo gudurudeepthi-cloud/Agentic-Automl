@@ -42,6 +42,34 @@
     {
       "match": "entity",
       "answer": "customer_id identifies the entity; rows repeat per entity."
+    },
+    {
+      "match": "project",
+      "answer": "Call it synthetic-fraud."
+    },
+    {
+      "match": "prediction is made",
+      "answer": "At scoring time, using only what is recorded before the outcome is known."
+    },
+    {
+      "match": "date column",
+      "answer": "event_time timestamps each row; test should be the latest period."
+    },
+    {
+      "match": "must not be used",
+      "answer": "I don't know of any; use your judgement and tell me what you exclude."
+    },
+    {
+      "match": "must be kept",
+      "answer": "No columns have to be kept."
+    },
+    {
+      "match": "cost of errors",
+      "answer": "Rank card transactions so analysts review the riskiest 1% first."
+    },
+    {
+      "match": "weights",
+      "answer": "No row weights and no data dictionary."
     }
   ],
   "dataset_path": "benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",

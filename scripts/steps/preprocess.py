@@ -46,6 +46,11 @@ leaky_kept = [col for col, r in roles.items() if r == "leakage_suspect" and col 
 assert not leaky_kept, f"leakage suspects not in drop_columns: {leaky_kept} (drop them or record why in the plan)"
 features = [col for col in train.columns if col not in DROP and col not in non_features
             and (roles.get(col, "feature") == "feature" or col in engineered)]  # engineered cols have no role
+excluded = {e["column"] for e in c.get("excluded_columns") or []}
+assert not excluded & set(features), f"user-excluded columns still features: {sorted(excluded & set(features))}"
+lost = sorted(set(c.get("required_features") or []) - set(features))
+assert not lost, f"required_features {lost} would be dropped (plan drop_columns or profile role); keep them or "\
+                 "go back to the contract with the user"
 numeric, cats = A.split_columns(train, features, cprof)
 too_wide = {f: int(train[f].nunique()) for f in cats if train[f].nunique() > args.max_onehot_levels}
 assert not too_wide, f"high-cardinality categoricals {too_wide}: drop them in the plan or engineer them"

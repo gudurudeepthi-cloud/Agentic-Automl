@@ -91,15 +91,23 @@ for i, a in enumerate(numeric):
             ea, eb = a in d.engineered, b in d.engineered
             drop = b if eb and not ea else a if ea and not eb else (a if uni[a] < uni[b] else b)
             redundant[drop] = {"duplicate_of": b if drop == a else a, "spearman": round(float(r), 4)}
+REQUIRED = [f for f in d.contract.get("required_features") or [] if f in d.raw]  # user asked to keep these
+gone = sorted(set(d.contract.get("required_features") or []) - set(REQUIRED))
+assert not gone, f"required_features missing before selection (dropped in the plan or profile?): {gone}"
+for f in REQUIRED:
+    redundant.pop(f, None)
 pool = [f for f in d.raw if f not in redundant]
-print(f"stage 1 (redundancy) removed: {redundant or 'nothing'} -> {len(pool)} features", flush=True)
+print(f"stage 1 (redundancy) removed: {redundant or 'nothing'} -> {len(pool)} features"
+      + (f"; always kept (contract): {REQUIRED}" if REQUIRED else ""), flush=True)
 
 
 def removable(imp):
     if args.rule == "mean":
-        return [f for f in pool if imp[f]["mean"] <= 0]
+        return [f for f in pool if imp[f]["mean"] <= 0 and f not in REQUIRED]
     out = []
     for f in pool:
+        if f in REQUIRED:
+            continue
         folds = np.array(imp[f]["per_fold"])
         if not (imp[f]["mean"] > 0 and (folds > 0).mean() >= 0.75 and imp[f]["mean"] > folds.std()):
             out.append(f)
@@ -142,6 +150,7 @@ A.write_json(args.out, {
     "stage0_plan_removed": stage0,
     "redundancy_filter": redundant,
     "candidate_pool": pool,
+    "required_by_contract": REQUIRED,
     "families": out_families,
     "note": "Selection, tuning and family choice share these folds (mild optimism); test is the honest check.",
 })

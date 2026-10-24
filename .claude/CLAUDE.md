@@ -17,13 +17,21 @@ that, by writing and running Python.
      `data-profiling`. It still needs an approved prediction contract first,
      so draft a minimal one with the user.
    - **(C) Anything else** → confirm scope in one sentence before acting.
-3. **Explore before asking.** Inspect file formats, columns, dtypes, row counts,
-   and split layout yourself. The only things you ask for are:
-   - the dataset path,
-   - the **target column** (always asked, never inferred from values or names),
-   - the business context (what the prediction is used for).
+3. **Explore, then interview.** Inspect the files first
+   (`templates/inspect_dataset.py`), then run the intake interview in the
+   `prediction-contract` skill before drafting anything. Ask, with your
+   proposal pre-filled where the data suggests one:
+   - project / use case, and who acts on the prediction,
+   - the **target column** and positive class (always asked, never inferred),
+   - when the prediction is made, and what is known at that moment,
+   - the **date/time column**, and whether test should be the latest period,
+   - the entity that repeats across rows (customer, account, ...),
+   - columns that **must not** be features (post-outcome, unavailable, PII,
+     policy) and columns that **must** be kept,
+   - cost of errors, metric, and deployment / model preference.
 
-   Everything else you propose, and the user confirms or corrects.
+   Use `AskUserQuestion` for choices between candidate columns. The user confirms
+   or corrects every answer. Nothing goes into the contract unconfirmed.
 4. Once dataset and goal are clear, name the trial:
    `agentic-automl artifacts set-trial-slug <short-kebab-slug>` (applied on next resume).
 

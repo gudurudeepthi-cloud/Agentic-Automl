@@ -40,6 +40,22 @@ def answer_bank(ds_id: str) -> list[dict]:
     ]
     if e.get("entity_id_column"):
         bank.append({"match": "entity", "answer": f"{e['entity_id_column']} identifies the entity; rows repeat per entity."})
+    else:
+        bank.append({"match": "entity", "answer": "No entity repeats across rows; each row is a different one."})
+    tcol = c.get("time_column") or (e.get("split") or {}).get("time_column")
+    bank += [
+        {"match": "project", "answer": f"Call it {ds_id.replace('_', '-')}."},
+        {"match": "prediction is made", "answer": e.get("prediction_point") or
+         "At scoring time, using only what is recorded before the outcome is known."},
+        {"match": "date column", "answer": f"{tcol} timestamps each row; test should be the latest period."
+         if tcol else "There is no date column; rows are not time-ordered."},
+        # Deliberately neutral: whether a column leaks is what the scenario tests, so the answer
+        # bank never names one (it would hand the agent the answer key).
+        {"match": "must not be used", "answer": "I don't know of any; use your judgement and tell me what you exclude."},
+        {"match": "must be kept", "answer": "No columns have to be kept."},
+        {"match": "cost of errors", "answer": e.get("business_context") or e["brief"]},
+        {"match": "weights", "answer": "No row weights and no data dictionary."},
+    ]
     return bank
 
 

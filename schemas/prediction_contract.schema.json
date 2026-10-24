@@ -69,6 +69,36 @@
     "scale_assumption": {"enum": ["local_workstation", "large_data_distributed_tbd"]},
     "ml_domain": {"enum": ["credit_risk", null], "description": "Optional overlay key; must match .claude/skills/domains/registry.json."},
     "research_max_experiments": {"type": "integer", "minimum": 1, "description": "auto-research budget; defaults to 15 when absent."},
+    "project_name": {"type": "string", "minLength": 1, "description": "The user's name for the project or use case."},
+    "prediction_point": {"type": "string", "minLength": 1, "description": "When the prediction is made and what is known at that moment, e.g. 'at authorisation, before any chargeback'."},
+    "required_features": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "description": "Columns the user wants kept as features; feature selection never removes them."},
+    "excluded_columns": {
+      "type": "array",
+      "description": "Columns the user says must not be features (known only after the outcome, not available at prediction time, PII, policy).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["column", "reason"],
+        "properties": {
+          "column": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "intake_answers": {
+      "type": "array",
+      "description": "The intake interview as asked: each question, the user's answer, and whether the answer was the agent's proposal confirmed or the user's own.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["question", "answer"],
+        "properties": {
+          "question": {"type": "string", "minLength": 1},
+          "answer": {"type": "string", "minLength": 1},
+          "source": {"enum": ["user", "confirmed_proposal", "default"]}
+        }
+      }
+    },
     "notes": {"type": "string"}
   },
   "allOf": [

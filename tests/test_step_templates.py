@@ -19,6 +19,7 @@ from agentic_automl.contracts import claude_template_dir, schema_path, step_temp
 SCRIPTS = step_templates_dir()
 SKILLS = claude_template_dir() / "skills"
 TEMPLATES = {
+    "inspect_dataset.py": "prediction-contract",
     "profile_dataset.py": "data-profiling",
     "model_family_screen.py": "workflow-planning",
     "features_template.py": "workflow-planning",
@@ -92,6 +93,9 @@ def _contract(data: str, split: str) -> dict:
         "target_column": "label", "target_labels": [0, 1], "entity_id_column": "entity", "weight_column": None,
         "primary_metric": "pr_auc", "report_metrics": ["roc_auc", "precision_at_top_5pct"],
         "model_preference": "single_baseline", "model_space": None, "scale_assumption": "local_workstation",
+        # intake answers: x3 carries signal but the user ruled it out; x2 is noise the user wants kept
+        "excluded_columns": [{"column": "x3", "reason": "recorded after the outcome"}],
+        "required_features": ["x2"],
     }
 
 
@@ -140,6 +144,7 @@ def test_templates_run_end_to_end(tmp_path, split):
     _promote(trial, "column_profile", "column_profile.json")
     roles = {c["name"]: c["role"] for c in json.loads((trial / "column_profile.json").read_text())["columns"]}
     assert roles["leak"] == "leakage_suspect" and roles["const"] == "drop" and roles["row_id"] == "id"
+    assert roles["x3"] == "drop"  # excluded at intake
 
     advice = (_ok(trial, "model_family_screen.py", "--folds", "3", "--families", "logistic_regression,random_forest"),
               json.loads((trial / "work" / "model_family_advice.json").read_text()))[1]
@@ -151,6 +156,9 @@ def test_templates_run_end_to_end(tmp_path, split):
     _promote(trial, "preprocessing_summary", "outputs/pipeline/preprocessing_summary.json")
     assert "estimated" in _ok(trial, "feature_selection.py", "--folds", "3", "--smoke")
     _ok(trial, "feature_selection.py", "--folds", "3")
+    selection = json.loads((trial / "outputs/model/feature_selection.json").read_text())
+    assert "x3" not in selection["candidate_pool"] and selection["required_by_contract"] == ["x2"]
+    assert all("x2" in fam["features"] for fam in selection["families"].values())
     _ok(trial, "train.py", "--folds", "3")
     _promote(trial, "training_summary", "outputs/model/training_summary.json")
     assert (trial / "outputs/model/cv_predictions.parquet").is_file()
@@ -164,3 +172,29 @@ def test_templates_run_end_to_end(tmp_path, split):
 
     again = _run(trial, "evaluate.py")  # evaluate-once guard
     assert again.returncode != 0 and "--rerun-reason" in (again.stdout + again.stderr)
+
+
+@needs_runtime
+def test_inspect_dataset_proposes_intake_answers(tmp_path):
+    trial = tmp_path / "trial"
+    (trial / "work").mkdir(parents=True)
+    for name in ("inspect_dataset.py", "aaml_common.py"):
+        shutil.copy(SCRIPTS / name, trial / "work" / name)
+    data = tmp_path / "data.csv"
+    _dataset(data)
+    _ok(trial, "inspect_dataset.py", data.as_posix())
+    cand = json.loads((trial / "work" / "intake_candidates.json").read_text())["candidates"]
+    assert cand["time"] == ["event_time"] and cand["row_id"] == ["row_id"]
+    assert "label" in {t["column"] for t in cand["target"]}  # a candidate, for the user to name or not
+
+
+def test_contract_rejects_contradictory_intake_answers():
+    from agentic_automl.artifacts import validate_payload
+
+    c = _contract("d.csv", "random_stratified")
+    assert validate_payload("prediction_contract", c) == []
+    bad = {**c, "excluded_columns": [{"column": "label", "reason": "r"}, {"column": "x2", "reason": "r"}],
+           "required_features": ["x2", "entity"]}
+    errors = " ".join(validate_payload("prediction_contract", bad))
+    assert "target 'label' cannot be excluded" in errors
+    assert "['x2'] are also in excluded_columns" in errors and "['entity'] are target" in errors

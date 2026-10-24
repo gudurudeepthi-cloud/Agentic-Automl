@@ -91,6 +91,9 @@ def probe_strength(col, is_cat):
 
 flags, columns, text_missing = [], [], {}
 ent, wcol, scol = c.get("entity_id_column"), c.get("weight_column"), c.get("split_column")
+user_excluded = {e["column"]: e["reason"] for e in c.get("excluded_columns") or []}
+missing_cols = sorted({*user_excluded, *(c.get("required_features") or [])} - set(df.columns))
+assert not missing_cols, f"contract names columns that are not in the data: {missing_cols}"
 for col in df.columns:
     s = df[col]
     n_unique = int(s.nunique(dropna=True))
@@ -158,6 +161,8 @@ for col in df.columns:
             flags.append({"severity": "warning", "columns": [col],
                           "message": f"{col} has {n_unique} levels; do not one-hot encode (drop, or use it as a "
                                      "novelty/frequency feature)"})
+    if col in user_excluded and role in ("feature", "leakage_suspect"):
+        role, notes = "drop", f"excluded at intake: {user_excluded[col]}"
     if missing > 0.5 and role == "feature":
         flags.append({"severity": "warning", "columns": [col], "message": f"{col} is {missing:.0%} missing"})
     if missing > 0 and role == "feature" and len(df) > 0:
