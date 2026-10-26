@@ -51,6 +51,22 @@
         "engineered_features": {"type": "array", "items": {"type": "string"}}
       }
     },
+    "vintage_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Which time periods (vintages) of the TRAIN split are used for fitting. Test is never filtered. Applied by aaml_common.split() in every step after planning.",
+      "required": ["column", "period", "rationale"],
+      "properties": {
+        "column": {"type": "string", "minLength": 1, "description": "Date column defining the vintage (usually the contract time_column)."},
+        "period": {"enum": ["D", "W", "M", "Q"]},
+        "train_start": {"type": ["string", "null"], "description": "First vintage kept, as a period label (e.g. '2025-03'); null = from the beginning."},
+        "train_end": {"type": ["string", "null"], "description": "Last vintage kept; null = up to the train/test boundary."},
+        "exclude_periods": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "maturity_days": {"type": ["integer", "null"], "minimum": 0, "description": "Outcome delay: train rows newer than (latest train date - maturity_days) are dropped as immature labels."},
+        "analysis_script": {"type": "string"},
+        "rationale": {"type": "string", "minLength": 1}
+      }
+    },
     "parity_requirements": {
       "type": "object",
       "description": "Only for production_parity / parity-ml: what the exported ONNX must match.",

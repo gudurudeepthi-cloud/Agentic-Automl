@@ -25,7 +25,7 @@ args = ap.parse_args()
 c = A.contract()
 T = A.task(c)
 TARGET, TIME = c["target_column"], c.get("time_column")
-train, test, info = A.split(c, engineer=False)
+train, test, info = A.split(c, engineer=False, vintage=False)  # the full contract split
 df = pd.concat([train, test], ignore_index=True)
 raw_n = info["raw_rows"]
 y_train = A.encode_target(train[TARGET], c)

@@ -22,6 +22,7 @@ tooling and is never copied into a trial.
 | data-profiling | `profile_dataset.py` | contract, data | `work/dataset_profile.json`, `work/column_profile.json` |
 | workflow-planning | `features_template.py` → `work/features.py` (optional) | contract | engineered features (point-in-time) |
 | workflow-planning | `model_family_screen.py` | contract, profiles, `work/features.py` | `work/model_family_advice.json` |
+| workflow-planning | `vintage_analysis.py` (when rows have a date) | contract, profiles, train split | `work/vintage_analysis.json`, `outputs/report/vintage_analysis.png` (proposal for `vintage_selection`) |
 | data-preprocessing | `preprocess.py` | contract, plan, profiles, `work/features.py` | parquet, `outputs/pipeline/preprocessor.joblib`, `work/preprocessing_summary.json` |
 | training | `feature_selection.py` (`--smoke` first; `--filters-only` for the bivariate report) | preprocessed train, plan | `outputs/model/feature_selection.json`, `outputs/model/bivariate.json` |
 | training | `train.py` | `feature_selection.json` | models, `cv_predictions.parquet`, `work/training_summary.json` |
@@ -42,7 +43,7 @@ Feature selection stages (all on train CV folds; required features exempt):
 5. keep the reduced set only if within 1 std of the full set
 
 What `aaml_common.py` provides:
-- **One split** (`split`). Profiling, the screen and preprocessing all get the same rows: exact duplicates are dropped and `work/features.py` runs on the time-sorted table before the split.
+- **One split** (`split`). Profiling, the screen and preprocessing all get the same rows: exact duplicates are dropped and `work/features.py` runs on the time-sorted table before the split. The plan's `vintage_selection` then filters **train only** (`vintage=False` gives the full split, which profiling and the vintage analysis use).
 - **One set of CV folds** (`cv_folds`):
   - temporal contract: expanding-window `TimeSeriesSplit`
   - repeated `entity_id_column`: group folds

@@ -22,6 +22,7 @@ TEMPLATES = {
     "inspect_dataset.py": "prediction-contract",
     "profile_dataset.py": "data-profiling",
     "model_family_screen.py": "workflow-planning",
+    "vintage_analysis.py": "workflow-planning",
     "features_template.py": "workflow-planning",
     "preprocess.py": "data-preprocessing",
     "feature_selection.py": "training",
@@ -152,7 +153,25 @@ def test_templates_run_end_to_end(tmp_path, split):
     assert ("TimeSeriesSplit" in advice["cv"]) == (split == "temporal")
     assert split == "temporal" or "StratifiedGroupKFold" in advice["cv"]
 
+    # vintage selection: analyse train weeks, then exclude the first week (train only)
+    out = _ok(trial, "vintage_analysis.py", "--column", "event_time", "--period", "W", "--maturity-days", "3",
+              "--holdout-periods", "1", "--drop", "row_id", "entity", "const", "leak", "--no-plot")
+    va = json.loads((trial / "work" / "vintage_analysis.json").read_text())
+    weeks = [v["vintage"] for v in va["train_vintages"]]
+    assert len(weeks) >= 5 and va["window_backtest"]["windows"]["all"]["mean"] > 0
+    assert any(f in v["flags"] for v in va["train_vintages"][-1:] for f in ("immature", "partly_immature"))
+    first = va["train_vintages"][0]
+    plan["vintage_selection"] = {"column": "event_time", "period": "W", "exclude_periods": [weeks[0]],
+                                 "rationale": "test: drop the first week"}
+    jsonschema.validate(plan, json.loads(schema_path("workflow_plan").read_text(encoding="utf-8")))
+    (trial / "state" / "workflow_plan.json").write_text(json.dumps(plan), encoding="utf-8")
+
     _ok(trial, "preprocess.py")
+    pre_sum = json.loads((trial / "work" / "preprocessing_summary.json").read_text())
+    prof_split = json.loads((trial / "dataset_profile.json").read_text())["split_summary"]
+    assert pre_sum["train_rows"] == prof_split["train"]["rows"] - first["rows"]
+    assert pre_sum["test_rows"] == prof_split["test"]["rows"]  # test is never filtered
+    assert "Vintage selection" in pre_sum["notes"]
     _promote(trial, "preprocessing_summary", "outputs/pipeline/preprocessing_summary.json")
     assert "estimated" in _ok(trial, "feature_selection.py", "--folds", "3", "--smoke")
     out = _ok(trial, "feature_selection.py", "--folds", "3", "--filters-only",
@@ -162,7 +181,7 @@ def test_templates_run_end_to_end(tmp_path, split):
     biv = json.loads((trial / "outputs/model/bivariate.json").read_text())
     strength = {b["feature"]: b["strength"] for b in biv["features"]}
     assert biv["features"][0]["statistic"] == "information_value" and strength["x1"] > strength["x2"]
-    train_rows = json.loads((trial / "dataset_profile.json").read_text())["split_summary"]["train"]["rows"]
+    train_rows = pre_sum["train_rows"]  # after vintage selection
     assert all(sum(r["n"] for r in b["bins"]) == train_rows for b in biv["features"])  # every row in one bin
     x2_bins = next(b for b in biv["features"] if b["feature"] == "x2")["bins"]
     assert x2_bins[-1]["bin"] == "<missing>"  # 5% blanks get their own bin

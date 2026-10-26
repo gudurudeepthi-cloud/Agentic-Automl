@@ -78,6 +78,44 @@ so the screen and training agree. Pass the planned drops with `--drop`:
    family first in `candidate_models`, plus the linear model as a reference
    baseline (useful even under `single_baseline`). State the gaps in the rationale.
 
+## Vintage selection (when rows have a date)
+A vintage is the period (month by default) of each row's date: when a transaction
+happened, or when a loan or account was opened. Decide which train vintages to
+fit on from evidence. Start from
+`cp templates/vintage_analysis.py work/`, then run
+`<runtime python> work/vintage_analysis.py [--period M|W|Q] [--maturity-days N] --drop <planned drops>`.
+It uses the train split only, and test vintages are shown for context.
+
+What it computes for each train vintage:
+- **Volume:** rows and events, below `--min-rows` or `--min-events`.
+- **Fraud/default rate:** a Wilson 95% interval, and a **p-chart** (pooled rate ± 3σ for
+  that vintage's size). A vintage outside the band is unusual: an attack, a policy
+  change or a data fault.
+- **Trend and largest shift:** a Spearman trend and the best single split point.
+- **Label maturity** with `--maturity-days`: outcomes such as chargebacks or defaults
+  arrive late, so the newest train rows may still be labelled 0.
+- **Feature drift:** PSI against the latest train vintages. Above 0.25 is major,
+  0.10–0.25 moderate.
+- **Training-window backtest:** rolling validation blocks inside train, comparing
+  `all` with shorter windows. A shorter window wins only if its paired gain beats
+  its own noise.
+
+Rules:
+- **Ask about outcome delay.** If the user didn't say how long outcomes take
+  (chargebacks, 90 days past due), ask. Immature labels look like a falling
+  fraud rate and quietly bias the model.
+- **Don't drop vintages silently.** The script proposes `vintage_selection`: a
+  window start, thin edge periods, and the maturity cut. It only *lists*
+  out-of-control or drifted vintages for review. Show the table and plot
+  (`outputs/report/vintage_analysis.png`), explain each proposed exclusion, and put
+  only what the user approves into the plan's `vintage_selection`
+  (`column`, `period`, `train_start`, `train_end`, `exclude_periods`,
+  `maturity_days`, `rationale`).
+- `aaml_common.split()` applies it to **train only** in every later step. Test stays
+  the contract's split, so test results stay comparable. Preprocessing reports
+  how many train rows it removed.
+- If the whole history is kept and nothing is immature, leave `vintage_selection` out.
+
 ## Feature engineering
 Propose features from the profile and the domain, then screen them before
 committing them to the plan. Write them in `work/features.py`, starting from
@@ -99,8 +137,8 @@ split in every later step, and `ENGINEERED` must equal the plan's `engineered_fe
 ## Steps
 1. Read the contract and both profiles. List the decisions the data forces:
    leakage suspects to drop, high-cardinality categoricals, imbalance
-   handling, time-awareness. Run the feature-engineering screen and the
-   model-family screen above.
+   handling, time-awareness. Run the vintage analysis (if rows have a date),
+   the feature-engineering screen and the model-family screen above.
 2. Draft the plan:
    - `objective`: one sentence.
    - `modeling_plan`: `candidate_models[]` (`name`, `library`, `rationale`,

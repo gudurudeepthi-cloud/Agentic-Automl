@@ -34,7 +34,9 @@ assert sorted(pp.get("engineered_features") or []) == sorted(engineered), \
 
 train, test, info = A.split(c)
 split = dprof.get("split_summary", {})
-assert len(train) == split.get("train", {}).get("rows", len(train)), "train rows differ from dataset_profile"
+n_vintage = info.get("vintage_excluded_rows", 0)  # plan vintage_selection (train only)
+assert len(train) + n_vintage == split.get("train", {}).get("rows", len(train) + n_vintage), \
+    "train rows differ from dataset_profile"
 assert len(test) == split.get("test", {}).get("rows", len(test)), "test rows differ from dataset_profile"
 if c["split_strategy"] == "temporal":
     assert train[c["time_column"]].max() < test[c["time_column"]].min(), "temporal split overlaps"
@@ -120,7 +122,9 @@ summary = {
     "train_rows": int(len(train)),
     "test_rows": int(len(test)),
     "leakage_checks": leakage_checks,
-    "notes": "Model-specific scaling/log transforms are applied inside each model pipeline, per CV fold.",
+    "notes": "Model-specific scaling/log transforms are applied inside each model pipeline, per CV fold."
+             + (f" Vintage selection {info['vintage_selection']} removed {n_vintage} train rows "
+                f"({info['vintage_immature_rows']} as immature labels); test is unfiltered." if n_vintage else ""),
 }
 A.write_json("work/preprocessing_summary.json", summary)
 print(f"{len(features)} raw features ({len(engineered)} engineered, {len(cats)} categorical) -> "

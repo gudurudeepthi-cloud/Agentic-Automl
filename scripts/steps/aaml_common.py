@@ -150,12 +150,42 @@ def _prepare(df: pd.DataFrame, c, dedupe: bool) -> tuple[pd.DataFrame, int]:
     return df.reset_index(drop=True), n_dupes
 
 
-def split(c, *, engineer: bool = True, dedupe: bool = True):
+def vintages(s: pd.Series, period: str) -> pd.Series:
+    """Period (vintage) of each date, e.g. Period('2025-03', 'M')."""
+    return pd.to_datetime(s).dt.to_period(period)
+
+
+def apply_vintage_selection(train: pd.DataFrame, sel: dict) -> tuple[pd.DataFrame, dict]:
+    """Keep the plan's vintages of the train split (test is never filtered)."""
+    v = vintages(train[sel["column"]], sel["period"])
+    keep = pd.Series(True, index=train.index)
+    if sel.get("train_start"):
+        keep &= v >= pd.Period(sel["train_start"], sel["period"])
+    if sel.get("train_end"):
+        keep &= v <= pd.Period(sel["train_end"], sel["period"])
+    if sel.get("exclude_periods"):
+        keep &= ~v.isin([pd.Period(p, sel["period"]) for p in sel["exclude_periods"]])
+    immature = 0
+    if sel.get("maturity_days"):
+        t = pd.to_datetime(train[sel["column"]])
+        young = t > t.max() - pd.Timedelta(days=sel["maturity_days"])
+        immature = int((keep & young).sum())
+        keep &= ~young
+    assert keep.any(), f"vintage_selection {sel} removes every train row"
+    return train[keep], {"vintage_excluded_rows": int((~keep).sum()), "vintage_immature_rows": immature,
+                         "vintage_selection": {k: sel.get(k) for k in ("column", "period", "train_start", "train_end",
+                                                                      "exclude_periods", "maturity_days")}}
+
+
+def split(c, *, engineer: bool = True, dedupe: bool = True, vintage: bool = True):
     """Apply the contract split exactly as every step must.
 
     Returns (train, test, info). Exact duplicate rows are dropped first. When
     work/features.py exists and `engineer` is True, its engineer() runs on the full
-    time-sorted table before splitting (so features must be point-in-time).
+    time-sorted table before splitting (so features must be point-in-time). When the
+    approved plan has `vintage_selection` and `vintage` is True, train keeps only the
+    selected vintages; info["vintage_excluded_rows"] says how many rows that removed.
+    Profiling and the vintage analysis pass vintage=False (they describe the full split).
     """
     raw = load_raw(c)
     feats = load_features_module() if engineer else None
@@ -193,6 +223,10 @@ def split(c, *, engineer: bool = True, dedupe: bool = True):
             both = feats.engineer(both, c)
             train = both[both["__part"] == "train"].drop(columns="__part")
             test = both[both["__part"] == "test"].drop(columns="__part")
+    sel = read_json("state/workflow_plan.json", default={}).get("vintage_selection") if vintage else None
+    if sel:
+        train, vinfo = apply_vintage_selection(train, sel)
+        info.update(vinfo)
     return train.reset_index(drop=True), test.reset_index(drop=True), info
 
 
