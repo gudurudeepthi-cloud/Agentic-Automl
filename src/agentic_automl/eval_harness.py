@@ -58,6 +58,7 @@ class EvalRunContext:
     model: str | None = None
     effort: str | None = None
     max_budget_usd: float | None = None  # run-wide cap; each scenario gets min(this, its own limit)
+    record: bool = False  # paid tiers: keep the full stream-json event log (every message and tool call)
     run_id: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-"
                         + uuid.uuid4().hex[:6])
 
@@ -192,7 +193,8 @@ def run_agent(prepared: PreparedEvalTrial, ctx: EvalRunContext) -> AgentRunResul
     budget = scenario_budget(s, ctx)
     # Cost controls: hard spend cap, turn cap, no web tools, no saved session. Hooks stay on (no --bare):
     # the validator guards are part of what the eval measures.
-    cmd = [cli.claude_executable(), "-p", build_prompt(s, dataset), "--output-format", "json",
+    fmt = ["--output-format", "stream-json", "--verbose"] if ctx.record else ["--output-format", "json"]
+    cmd = [cli.claude_executable(), "-p", build_prompt(s, dataset), *fmt,
            "--max-turns", str(s["limits"]["max_turns"]), "--permission-mode", "acceptEdits",
            "--disallowedTools", "WebSearch", "WebFetch", "--no-session-persistence"]
     if budget:
@@ -201,6 +203,7 @@ def run_agent(prepared: PreparedEvalTrial, ctx: EvalRunContext) -> AgentRunResul
         cmd += ["--model", ctx.model]
     if ctx.effort:
         cmd += ["--effort", ctx.effort]
+    cmd = cli.with_dataset_dirs(cmd, trial)
     env = cli.claude_env(trial)
     log = trial / "work" / "eval_agent_output.json"
     log.parent.mkdir(parents=True, exist_ok=True)
@@ -209,11 +212,24 @@ def run_agent(prepared: PreparedEvalTrial, ctx: EvalRunContext) -> AgentRunResul
                               timeout=s["limits"]["timeout_seconds"])
     except subprocess.TimeoutExpired:
         return AgentRunResult(None, "timeout", None, None, None, timed_out=True)
-    log.write_text(proc.stdout, encoding="utf-8")
-    try:
-        out = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        out = {}
+    out = {}
+    if ctx.record:  # one JSON event per line; the last `result` event carries cost and turns
+        (trial / "work" / "eval_agent_stream.jsonl").write_text(proc.stdout, encoding="utf-8")
+        for line in reversed(proc.stdout.splitlines()):
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if ev.get("type") == "result":
+                out = ev
+                break
+        log.write_text(json.dumps(out, indent=2), encoding="utf-8")
+    else:
+        log.write_text(proc.stdout, encoding="utf-8")
+        try:
+            out = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            out = {}
     return AgentRunResult(proc.returncode, out.get("subtype") or ("error" if proc.returncode else None),
                           out.get("total_cost_usd"), out.get("num_turns"), str(log))
 
@@ -339,6 +355,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--effort", default=DEFAULT_EVAL_EFFORT, help=f"paid tiers (default {DEFAULT_EVAL_EFFORT})")
     ap.add_argument("--max-budget-usd", type=float, default=None,
                     help="per-scenario spend cap for paid tiers (min with each scenario's own limit)")
+    ap.add_argument("--record", action="store_true",
+                    help="paid tiers: save every message and tool call to <trial>/work/eval_agent_stream.jsonl")
     ap.add_argument("--list", action="store_true", help="list matching scenarios and exit")
     args = ap.parse_args(argv)
 
@@ -361,7 +379,7 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 2
     ctx = EvalRunContext(args.tier, args.output_dir.resolve(), args.trust_runtime, args.model, args.effort,
-                         args.max_budget_usd)
+                         args.max_budget_usd, record=args.record)
     (ctx.output_dir / "results").mkdir(parents=True, exist_ok=True)
     results = []
     for s in scenarios:

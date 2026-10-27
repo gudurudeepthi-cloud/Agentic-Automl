@@ -81,6 +81,21 @@ def test_deterministic_tier_passes_on_committed_seeds(tmp_path):
     assert row["status"] == "pass" and float(row["test_value"]) > 0 and row["selected_model"]
 
 
+def test_dataset_folders_are_added_as_working_dirs(tmp_path, capsys):
+    """Claude Code refuses commands naming files outside its working dirs when
+    blockReadsOutsideWorkingDirectories is on, so the launcher adds the data's folders."""
+    from agentic_automl import artifacts, cli
+
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    (data_dir / "d.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    cli.main(["new", "--no-launch"])
+    trial = Path(json.loads(capsys.readouterr().out)["trial_dir"])
+    artifacts.ensure_state(trial, goal="g", dataset_path=str(data_dir / "d.csv"))
+    cmd = cli.with_dataset_dirs(["claude", "-p", "go"], trial)
+    assert cmd[:3] == ["claude", "--add-dir", str(data_dir.resolve())] and cmd[-2:] == ["-p", "go"]
+
+
 def test_paid_tier_needs_trust_runtime(tmp_path):
     assert eh.main(["--tier", "e2e", "--output-dir", str(tmp_path)]) == 2
     assert not (tmp_path / "results").exists()

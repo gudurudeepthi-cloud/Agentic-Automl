@@ -273,7 +273,37 @@ def claude_env(trial: Path) -> dict[str, str]:
     return env
 
 
+def dataset_dirs(trial: Path) -> list[Path]:
+    """Local folders holding the trial's data (state dataset_path, contract segments and schema
+    files). Claude Code treats only the trial as a working directory, and with
+    `permissions.blockReadsOutsideWorkingDirectories` it refuses any command that names a path
+    outside it, so the data's folders are added with --add-dir."""
+    paths = [artifacts.load_state(trial).get("dataset_path")]
+    contract = trial / "prediction_contract.json"
+    if contract.is_file():
+        try:
+            c = json.loads(contract.read_text(encoding="utf-8-sig"))
+            paths += [s.get("path") for s in c.get("data_segments", [])] + list(c.get("schema_files", []))
+        except (json.JSONDecodeError, AttributeError):
+            pass
+    out: list[Path] = []
+    for raw in paths:
+        if not raw or str(raw).startswith("gs://"):
+            continue
+        p = Path(raw).expanduser()
+        d = (p if p.is_dir() else p.parent).resolve()
+        if d.is_dir() and d not in out and not d.is_relative_to(trial.resolve()):
+            out.append(d)
+    return out
+
+
+def with_dataset_dirs(cmd: list[str], trial: Path) -> list[str]:
+    extra = [a for d in dataset_dirs(trial) for a in ("--add-dir", str(d))]
+    return cmd[:1] + extra + cmd[1:]
+
+
 def launch_claude(trial: Path, cmd: list[str], *, mode: str, dev: bool = False) -> int:
+    cmd = with_dataset_dirs(cmd, trial)
     env = claude_env(trial)
     if dev:
         env["AGENTIC_AUTOML_DEV"] = "1"
