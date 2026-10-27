@@ -40,6 +40,10 @@ packages = ["src/agentic_automl"]
 ".claude" = "agentic_automl/_data/claude"
 "scripts/steps" = "agentic_automl/_data/steps"  # step templates only; the rest of scripts/ is contributor tooling
 
+# Demo videos and pages are large and not needed to build or run the tool.
+[tool.hatch.build.targets.sdist]
+exclude = ["docs/", "dist/"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
