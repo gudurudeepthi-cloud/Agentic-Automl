@@ -70,6 +70,10 @@
     {
       "match": "weights",
       "answer": "No row weights and no data dictionary."
+    },
+    {
+      "match": "outcome delay",
+      "answer": "Labels in this dataset are final; there is no outcome delay to wait for."
     }
   ],
   "dataset_path": "benchmarks/evals/fixtures/datasets/telco_churn.csv",

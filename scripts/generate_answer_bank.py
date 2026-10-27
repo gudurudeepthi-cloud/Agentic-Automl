@@ -55,7 +55,12 @@ def answer_bank(ds_id: str) -> list[dict]:
         {"match": "must be kept", "answer": "No columns have to be kept."},
         {"match": "cost of errors", "answer": e.get("business_context") or e["brief"]},
         {"match": "weights", "answer": "No row weights and no data dictionary."},
+        {"match": "outcome delay", "answer": e.get("outcome_delay") or
+         "Labels in this dataset are final; there is no outcome delay to wait for."},
     ]
+    if tcol:
+        bank.append({"match": "vintage", "answer": "Analyse the vintages and propose a selection; keep all periods "
+                                                   "unless the evidence says otherwise, and tell me what you exclude."})
     return bank
 
 

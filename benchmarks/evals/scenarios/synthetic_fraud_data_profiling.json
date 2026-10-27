@@ -70,6 +70,14 @@
     {
       "match": "weights",
       "answer": "No row weights and no data dictionary."
+    },
+    {
+      "match": "outcome delay",
+      "answer": "Labels in this dataset are final; there is no outcome delay to wait for."
+    },
+    {
+      "match": "vintage",
+      "answer": "Analyse the vintages and propose a selection; keep all periods unless the evidence says otherwise, and tell me what you exclude."
     }
   ],
   "dataset_path": "benchmarks/evals/fixtures/datasets/synthetic_fraud.csv",
@@ -95,10 +103,10 @@
   "invariants": [
     {
       "type": "file_contains",
-      "name": "chargeback_flag_is_leakage_suspect",
+      "name": "chargeback_flag_caught_as_leakage",
       "path": "column_profile.json",
       "patterns": [
-        "\"name\": \"chargeback_flag\",[^}]*\"role\": \"leakage_suspect\""
+        "\"name\": \"chargeback_flag\",[^}]*\"role\": \"(leakage_suspect|drop)\""
       ]
     },
     {
